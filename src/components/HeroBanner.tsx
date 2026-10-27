@@ -35,7 +35,28 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     }
   };
 
-  const sampleKeywords = ['چک صیادی', 'الزام به تنظیم سند', 'طلاق و مهریه', 'کلاهبرداری اینترنتی', 'تخلیه مستاجر'];
+  const sampleKeywords = cms.popularSearchTags?.length > 0 
+    ? cms.popularSearchTags 
+    : ['چک صیادی', 'الزام به تنظیم سند', 'طلاق و مهریه', 'کلاهبرداری اینترنتی', 'تخلیه مستاجر'];
+
+  const stats = cms.statsCards?.length > 0 ? cms.statsCards : [
+    { id: 'stat-1', value: '۳۵۰+', label: 'وکیل پایه یک احراز هویت شده', color: 'amber' as const },
+    { id: 'stat-2', value: '۹۸.۴٪', label: 'رضایت موکلین از مشاوره', color: 'emerald' as const },
+    { id: 'stat-3', value: '۱۴,۲۰۰+', label: 'مشاوره و تریاژ موفق پرونده', color: 'cyan' as const },
+    { id: 'stat-4', value: '۲۵۶-bit', label: 'رمزنگاری سرتاسری اسناد و ویدیو', color: 'purple' as const },
+  ];
+
+  const getStatColorClass = (color: string) => {
+    switch (color) {
+      case 'amber': return 'text-amber-400';
+      case 'emerald': return 'text-emerald-400';
+      case 'cyan': return 'text-cyan-400';
+      case 'purple': return 'text-purple-400';
+      case 'blue': return 'text-blue-400';
+      case 'rose': return 'text-rose-400';
+      default: return 'text-amber-400';
+    }
+  };
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 border-b border-slate-800 py-10 px-4">
@@ -44,10 +65,18 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
       <div className="absolute bottom-0 left-1/4 translate-y-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Announcement Ticker */}
-        <div className="mb-6 inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-4 py-1.5 text-xs text-amber-300">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>{cms.announcementTicker}</span>
+        {/* Announcement Ticker & Badge */}
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-4 py-1.5 text-xs text-amber-300">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>{cms.announcementTicker}</span>
+          </div>
+          {cms.heroBadge && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 bg-slate-800/80 border border-slate-700/80 rounded-full px-3 py-1 text-[11px] text-slate-300">
+              <Award className="w-3 h-3 text-amber-400" />
+              <span>{cms.heroBadge}</span>
+            </span>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-12 gap-8 items-center">
@@ -66,7 +95,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="جستجوی موضوع پرونده (مثلا: چک، الزام به سند، طلاق، کلاهبرداری) یا نام وکیل..."
+                placeholder={cms.heroSearchPlaceholder || 'جستجوی موضوع پرونده (مثلا: چک، الزام به سند، طلاق، کلاهبرداری) یا نام وکیل...'}
                 className="w-full bg-slate-950/90 border border-slate-700 focus:border-amber-500 rounded-2xl py-3.5 pr-11 pl-28 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 shadow-xl"
               />
               <Search className="w-5 h-5 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
@@ -99,7 +128,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black px-6 py-3.5 rounded-2xl text-sm shadow-xl shadow-amber-500/25 transition-all hover:scale-105 cursor-pointer"
               >
                 <Brain className="w-5 h-5 text-slate-950 animate-pulse" />
-                <span>تریاژ رایگان پرونده با هوش مصنوعی</span>
+                <span>{cms.heroTriageButtonText || 'تریاژ رایگان پرونده با هوش مصنوعی'}</span>
                 <ArrowLeft className="w-4 h-4" />
               </button>
 
@@ -108,7 +137,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 className="flex items-center gap-2 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 font-semibold px-5 py-3.5 rounded-2xl text-sm transition-colors cursor-pointer"
               >
                 <Scale className="w-4 h-4 text-amber-400" />
-                <span>پیگیری پرونده در سامانه عدل ایران</span>
+                <span>{cms.heroTrackingButtonText || 'پیگیری پرونده در سامانه عدل ایران'}</span>
               </button>
             </div>
           </div>
@@ -122,15 +151,15 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                     <Brain className="w-5 h-5 text-amber-400" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-100">سامانه تریاژ حقوقی دادگستر</h3>
+                    <h3 className="text-sm font-bold text-slate-100">{cms.triageCardTitle || 'سامانه تریاژ حقوقی دادگستر'}</h3>
                     <p className="text-[11px] text-emerald-400 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                      موتور هوش مصنوعی آنلاین و آماده تحلیل
+                      {cms.triageCardStatusText || 'موتور هوش مصنوعی آنلاین و آماده تحلیل'}
                     </p>
                   </div>
                 </div>
                 <span className="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full border border-slate-700">
-                  قوانین ۱۴۰۳
+                  {cms.triageCardLawYearBadge || 'قوانین ۱۴۰۳'}
                 </span>
               </div>
 
@@ -138,33 +167,28 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 <div className="bg-slate-950/60 rounded-xl p-3 border border-slate-800">
                   <div className="text-slate-400 mb-1 font-medium">قابلیت‌های تریاژ هوشمند:</div>
                   <ul className="space-y-1.5 text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>دسته‌بندی خودکار دعوا (کیفری، حقوقی، خانواده، ملکی، کار)</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>استخراج مواد قانونی حاکم (قانون مدنی، مجازات و آیین دادرسی)</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>تخمین ادله اثبات لازم، درصد موفقیت و مدت زمان تقریبی</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>معرفی وکیل متخصص با بالاترین آمار پیروزی مرتبط</span>
-                    </li>
+                    {(cms.triageCardFeatures || [
+                      'دسته‌بندی خودکار دعوا (کیفری، حقوقی، خانواده، ملکی، کار)',
+                      'استخراج مواد قانونی حاکم (قانون مدنی، مجازات و آیین دادرسی)',
+                      'تخمین ادله اثبات لازم، درصد موفقیت و مدت زمان تقریبی',
+                      'معرفی وکیل متخصص با بالاترین آمار پیروزی مرتبط',
+                    ]).map((feature, idx) => (
+                      <li key={idx} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
                 <div className="flex items-center justify-between text-slate-400 pt-1 text-[11px]">
                   <span className="flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    حفظ ۱۰۰٪ محرمانگی طبق اصل وکالت
+                    {cms.triageCardConfidentialityNotice || 'حفظ ۱۰۰٪ محرمانگی طبق اصل وکالت'}
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5 text-amber-400" />
-                    تحلیل در کمتر از ۱۰ ثانیه
+                    {cms.triageCardSpeedNotice || 'تحلیل در کمتر از ۱۰ ثانیه'}
                   </span>
                 </div>
 
@@ -173,7 +197,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   className="w-full mt-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>تست آنلاین تریاژ با پرونده نمونه یا دلخواه</span>
+                  <span>{cms.triageCardCtaText || 'تست آنلاین تریاژ با پرونده نمونه یا دلخواه'}</span>
                 </button>
               </div>
             </div>
@@ -182,22 +206,12 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10 pt-6 border-t border-slate-800/80">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center">
-            <div className="text-2xl font-black text-amber-400">۳۵۰+</div>
-            <div className="text-xs text-slate-400 mt-1 font-medium">وکیل پایه یک احراز هویت شده</div>
-          </div>
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center">
-            <div className="text-2xl font-black text-emerald-400">۹۸.۴٪</div>
-            <div className="text-xs text-slate-400 mt-1 font-medium">رضایت موکلین از مشاوره</div>
-          </div>
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center">
-            <div className="text-2xl font-black text-cyan-400">۱۴,۲۰۰+</div>
-            <div className="text-xs text-slate-400 mt-1 font-medium">مشاوره و تریاژ موفق پرونده</div>
-          </div>
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center">
-            <div className="text-2xl font-black text-purple-400">۲۵۶-bit</div>
-            <div className="text-xs text-slate-400 mt-1 font-medium">رمزنگاری سرتاسری اسناد و ویدیو</div>
-          </div>
+          {stats.map((stat) => (
+            <div key={stat.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center">
+              <div className={`text-2xl font-black ${getStatColorClass(stat.color)}`}>{stat.value}</div>
+              <div className="text-xs text-slate-400 mt-1 font-medium">{stat.label}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -215,12 +215,77 @@ export interface AITriageResult {
   nextActionSteps: string[];
 }
 
+export type LinkCategory =
+  | 'header-top'
+  | 'header-nav'
+  | 'footer-services'
+  | 'footer-judicial'
+  | 'footer-quick'
+  | 'action-banner';
+
+export interface CustomAppLink {
+  id: string;
+  title: string;
+  urlOrTarget: string; // e.g. '#lawyers', '#cases', '#consultations', '#calendar', '#documents', '#qna', '#sms', '#triage', 'page:legal-tariffs', or 'https://adliran.ir'
+  category: LinkCategory;
+  isExternal: boolean;
+  order: number;
+  isActive: boolean;
+  badge?: string;
+  description?: string;
+}
+
+export interface AppStatCard {
+  id: string;
+  value: string;
+  label: string;
+  color: 'amber' | 'emerald' | 'cyan' | 'purple' | 'blue' | 'rose';
+}
+
 export interface CMSContent {
+  // Brand & Header
+  brandName: string;
+  brandTagline: string;
+  announcementTicker: string;
+  contactEmergencyPhone: string;
+  contactEmergencyLabel: string;
+
+  // Hero Section
   heroTitle: string;
   heroSubtitle: string;
-  announcementTicker: string;
+  heroBadge: string;
+  heroSearchPlaceholder: string;
+  popularSearchTags: string[];
+  heroTriageButtonText: string;
+  heroTrackingButtonText: string;
+
+  // AI Triage Card & Security Highlighting
+  triageCardTitle: string;
+  triageCardStatusText: string;
+  triageCardLawYearBadge: string;
+  triageCardFeatures: string[];
+  triageCardConfidentialityNotice: string;
+  triageCardSpeedNotice: string;
+  triageCardCtaText: string;
+
+  // Stats Counters
+  statsCards: AppStatCard[];
+
+  // Guarantees and Policies
   consultationGuaranteeText: string;
-  contactEmergencyPhone: string;
+  documentVaultSecurityNotice: string;
+  triageLegalDisclaimer: string;
+
+  // Footer Section
+  footerMissionText: string;
+  footerCopyrightText: string;
+  footerSecurityBadge1: string;
+  footerSecurityBadge2: string;
+
+  // Custom Links
+  customLinks: CustomAppLink[];
+
+  // FAQ
   faqs: { question: string; answer: string }[];
 }
 

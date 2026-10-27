@@ -19,8 +19,9 @@ import {
   Sliders,
   ExternalLink,
   BookOpen,
+  Phone,
 } from 'lucide-react';
-import { User, UserRole, MenuItem, DynamicPage } from '../types/legal';
+import { User, UserRole, MenuItem, DynamicPage, CMSContent } from '../types/legal';
 
 interface HeaderProps {
   currentUser: User;
@@ -37,6 +38,7 @@ interface HeaderProps {
   menus: MenuItem[];
   pages: DynamicPage[];
   onSelectPage: (page: DynamicPage) => void;
+  cms?: CMSContent;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -52,6 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
   menus,
   pages,
   onSelectPage,
+  cms,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null);
@@ -130,12 +133,54 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-amber-400 font-medium">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              سامانه دادگستر مجهز به احراز هویت ثنا، نظارت کانون وکلا و تسویه امن شاپرک
+              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{cms?.announcementTicker || 'سامانه دادگستر مجهز به احراز هویت ثنا، نظارت کانون وکلا و تسویه امن شاپرک'}</span>
             </span>
+
+            {/* Dynamic Custom Top Header Links */}
+            {cms?.customLinks?.filter(l => l.isActive && l.category === 'header-top').map(link => (
+              <a
+                key={link.id}
+                href={link.urlOrTarget}
+                target={link.isExternal ? '_blank' : undefined}
+                rel={link.isExternal ? 'noopener noreferrer' : undefined}
+                onClick={(e) => {
+                  if (!link.isExternal && link.urlOrTarget.startsWith('#')) {
+                    e.preventDefault();
+                    const target = link.urlOrTarget.replace('#', '');
+                    if (target === 'triage') onOpenTriage();
+                    else setActiveTab(target);
+                  } else if (!link.isExternal && link.urlOrTarget.startsWith('page:')) {
+                    e.preventDefault();
+                    const slug = link.urlOrTarget.replace('page:', '');
+                    const foundP = pages.find(p => p.slug === slug);
+                    if (foundP) onSelectPage(foundP);
+                  }
+                }}
+                className="hidden lg:inline-flex items-center gap-1 text-[11px] text-slate-300 hover:text-amber-400 transition-colors cursor-pointer"
+              >
+                <span>{link.title}</span>
+                {link.badge && (
+                  <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-bold">
+                    {link.badge}
+                  </span>
+                )}
+              </a>
+            ))}
           </div>
 
           <div className="flex items-center gap-4">
+            {cms?.contactEmergencyPhone && (
+              <a
+                href={`tel:${cms.contactEmergencyPhone.replace(/[^0-9]/g, '')}`}
+                className="hidden sm:flex items-center gap-1 text-slate-300 hover:text-amber-300 text-[11px] transition-colors"
+                title={cms.contactEmergencyLabel || 'پشتیبانی فوری'}
+              >
+                <Phone className="w-3.5 h-3.5 text-amber-400" />
+                <span>{cms.contactEmergencyLabel || 'پشتیبانی'}: {cms.contactEmergencyPhone}</span>
+              </a>
+            )}
+
             {currentUser.role === 'admin' && (
               <button
                 onClick={() => setActiveTab('master-admin')}
@@ -190,13 +235,13 @@ export const Header: React.FC<HeaderProps> = ({
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xl font-black bg-gradient-to-l from-white via-slate-100 to-amber-200 bg-clip-text text-transparent">
-                    دادگستر
+                    {cms?.brandName || 'دادگستر'}
                   </span>
                   <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded border border-amber-500/40">
                     وکالت برخط
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">سامانه تریاژ هوشمند و خدمات حقوقی</p>
+                <p className="text-[11px] text-slate-400">{cms?.brandTagline || 'سامانه جامع هوشمند حقوقی و وکالت برخط'}</p>
               </div>
             </div>
 

@@ -34,6 +34,15 @@ import {
   Phone,
   Video,
   MessageSquare,
+  Link2,
+  Globe,
+  ExternalLink,
+  Layers,
+  Type,
+  Tag,
+  RotateCcw,
+  Brain,
+  HelpCircle,
 } from 'lucide-react';
 import {
   Lawyer,
@@ -41,7 +50,12 @@ import {
   DynamicPage,
   MenuItem,
   AdminAssistant,
+  CMSContent,
+  CustomAppLink,
+  LinkCategory,
+  AppStatCard,
 } from '../types/legal';
+import { INITIAL_CMS } from '../data/mockData';
 
 interface MasterAdminManagementPanelProps {
   lawyers: Lawyer[];
@@ -68,6 +82,9 @@ interface MasterAdminManagementPanelProps {
   onDeleteAssistant: (assistantId: string) => void;
   activeAssistant: AdminAssistant;
   onSelectActiveAssistant: (assistant: AdminAssistant) => void;
+
+  cms: CMSContent;
+  onUpdateCMS: (newCMS: CMSContent) => void;
 }
 
 export const MasterAdminManagementPanel: React.FC<MasterAdminManagementPanelProps> = ({
@@ -95,10 +112,12 @@ export const MasterAdminManagementPanel: React.FC<MasterAdminManagementPanelProp
   onDeleteAssistant,
   activeAssistant,
   onSelectActiveAssistant,
+  cms,
+  onUpdateCMS,
 }) => {
   // Navigation inside Admin Console
   const [adminTab, setAdminTab] = useState<
-    'lawyers' | 'commission' | 'pages' | 'menus' | 'assistants'
+    'lawyers' | 'commission' | 'pages' | 'menus' | 'content-links' | 'assistants'
   >('lawyers');
 
   // Toast notification feedback
@@ -111,6 +130,181 @@ export const MasterAdminManagementPanel: React.FC<MasterAdminManagementPanelProp
   // RBAC Permission checks
   const perms = activeAssistant.permissions;
   const isSuper = activeAssistant.accessLevel === 'full';
+
+  // -------------------------------------------------------------
+  // TAB: APP SECTIONS, DEFAULT TEXTS & LINKS MANAGER STATE
+  // -------------------------------------------------------------
+  const [contentForm, setContentForm] = useState<CMSContent>({ ...cms });
+  const [activeContentSection, setActiveContentSection] = useState<
+    'all' | 'header-brand' | 'hero' | 'triage-vault' | 'stats' | 'footer' | 'links'
+  >('all');
+  const [newTagInput, setNewTagInput] = useState('');
+
+  // Link Management Modal State
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<CustomAppLink | null>(null);
+  const [linkTitle, setLinkTitle] = useState('');
+  const [linkUrlOrTarget, setLinkUrlOrTarget] = useState('');
+  const [linkCategory, setLinkCategory] = useState<LinkCategory>('footer-services');
+  const [linkIsExternal, setLinkIsExternal] = useState(false);
+  const [linkBadge, setLinkBadge] = useState('');
+  const [linkDescription, setLinkDescription] = useState('');
+  const [linkIsActive, setLinkIsActive] = useState(true);
+  const [linkSearchQuery, setLinkSearchQuery] = useState('');
+  const [linkFilterCategory, setLinkFilterCategory] = useState<'all' | LinkCategory>('all');
+
+  const handleSaveContentChanges = () => {
+    if (!perms.canManagePages && !perms.canManageMenus && !isSuper) {
+      showToast('خطا: شما مجوز تغییر متون و تنظیمات بخش‌ها را ندارید.');
+      return;
+    }
+    onUpdateCMS(contentForm);
+    showToast('کلیه متون و تنظیمات بخش‌ها با موفقیت ذخیره و در سراسر سامانه اعمال شد.');
+  };
+
+  const handleResetToDefaultCMS = () => {
+    if (!isSuper) {
+      showToast('خطا: بازنشانی متون و پیوندها تنها توسط مدیر کل امکان‌پذیر است.');
+      return;
+    }
+    setContentForm({ ...INITIAL_CMS });
+    onUpdateCMS({ ...INITIAL_CMS });
+    showToast('کلیه متون، بخش‌ها و پیوندهای پیش‌فرض به تنظیمات کارخانه بازگردانی شدند.');
+  };
+
+  const handleAddPopularTag = () => {
+    if (newTagInput.trim() && !(contentForm.popularSearchTags || []).includes(newTagInput.trim())) {
+      const updated = [...(contentForm.popularSearchTags || []), newTagInput.trim()];
+      const updatedCMS = { ...contentForm, popularSearchTags: updated };
+      setContentForm(updatedCMS);
+      onUpdateCMS(updatedCMS);
+      setNewTagInput('');
+      showToast(`کلیدواژه «${newTagInput.trim()}» به جستجوهای پرطرفدار افزوده شد.`);
+    }
+  };
+
+  const handleRemovePopularTag = (tagToRemove: string) => {
+    const updated = (contentForm.popularSearchTags || []).filter((t) => t !== tagToRemove);
+    const updatedCMS = { ...contentForm, popularSearchTags: updated };
+    setContentForm(updatedCMS);
+    onUpdateCMS(updatedCMS);
+    showToast(`کلیدواژه «${tagToRemove}» حذف شد.`);
+  };
+
+  const handleOpenCreateLink = () => {
+    setEditingLink(null);
+    setLinkTitle('');
+    setLinkUrlOrTarget('#lawyers');
+    setLinkCategory('footer-services');
+    setLinkIsExternal(false);
+    setLinkBadge('');
+    setLinkDescription('');
+    setLinkIsActive(true);
+    setLinkModalOpen(true);
+  };
+
+  const handleOpenEditLink = (link: CustomAppLink) => {
+    setEditingLink(link);
+    setLinkTitle(link.title);
+    setLinkUrlOrTarget(link.urlOrTarget);
+    setLinkCategory(link.category);
+    setLinkIsExternal(link.isExternal);
+    setLinkBadge(link.badge || '');
+    setLinkDescription(link.description || '');
+    setLinkIsActive(link.isActive);
+    setLinkModalOpen(true);
+  };
+
+  const handleSaveLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!perms.canManagePages && !perms.canManageMenus && !isSuper) {
+      showToast('خطا: شما مجوز ایجاد یا ویرایش پیوندها را ندارید.');
+      return;
+    }
+    if (!linkTitle.trim() || !linkUrlOrTarget.trim()) {
+      showToast('خطا: وارد کردن عنوان و مقصد پیوند الزامی است.');
+      return;
+    }
+
+    let updatedLinks = [...(contentForm.customLinks || [])];
+    if (editingLink) {
+      updatedLinks = updatedLinks.map((l) =>
+        l.id === editingLink.id
+          ? {
+              ...l,
+              title: linkTitle.trim(),
+              urlOrTarget: linkUrlOrTarget.trim(),
+              category: linkCategory,
+              isExternal: linkIsExternal,
+              badge: linkBadge.trim() || undefined,
+              description: linkDescription.trim() || undefined,
+              isActive: linkIsActive,
+            }
+          : l
+      );
+      showToast(`پیوند «${linkTitle}» به‌روزرسانی شد.`);
+    } else {
+      const newLink: CustomAppLink = {
+        id: `link-${Date.now()}`,
+        title: linkTitle.trim(),
+        urlOrTarget: linkUrlOrTarget.trim(),
+        category: linkCategory,
+        isExternal: linkIsExternal,
+        order: updatedLinks.length + 1,
+        isActive: linkIsActive,
+        badge: linkBadge.trim() || undefined,
+        description: linkDescription.trim() || undefined,
+      };
+      updatedLinks.push(newLink);
+      showToast(`پیوند جدید «${linkTitle}» افزوده شد.`);
+    }
+
+    const updatedCMS = { ...contentForm, customLinks: updatedLinks };
+    setContentForm(updatedCMS);
+    onUpdateCMS(updatedCMS);
+    setLinkModalOpen(false);
+  };
+
+  const handleDeleteLink = (linkId: string) => {
+    if (!perms.canManagePages && !perms.canManageMenus && !isSuper) {
+      showToast('خطا: شما مجوز حذف پیوند را ندارید.');
+      return;
+    }
+    const target = (contentForm.customLinks || []).find((l) => l.id === linkId);
+    const updated = (contentForm.customLinks || []).filter((l) => l.id !== linkId);
+    const updatedCMS = { ...contentForm, customLinks: updated };
+    setContentForm(updatedCMS);
+    onUpdateCMS(updatedCMS);
+    showToast(`پیوند «${target?.title || ''}» حذف شد.`);
+  };
+
+  const handleToggleLinkActive = (linkId: string) => {
+    const updated = (contentForm.customLinks || []).map((l) =>
+      l.id === linkId ? { ...l, isActive: !l.isActive } : l
+    );
+    const updatedCMS = { ...contentForm, customLinks: updated };
+    setContentForm(updatedCMS);
+    onUpdateCMS(updatedCMS);
+    showToast('وضعیت نمایش پیوند تغییر کرد.');
+  };
+
+  const handleMoveLink = (linkId: string, direction: 'up' | 'down') => {
+    const links = [...(contentForm.customLinks || [])];
+    const idx = links.findIndex((l) => l.id === linkId);
+    if (idx === -1) return;
+    if (direction === 'up' && idx > 0) {
+      const tmp = links[idx];
+      links[idx] = links[idx - 1];
+      links[idx - 1] = tmp;
+    } else if (direction === 'down' && idx < links.length - 1) {
+      const tmp = links[idx];
+      links[idx] = links[idx + 1];
+      links[idx + 1] = tmp;
+    }
+    const updatedCMS = { ...contentForm, customLinks: links };
+    setContentForm(updatedCMS);
+    onUpdateCMS(updatedCMS);
+  };
 
   // -------------------------------------------------------------
   // TAB 1: LAWYER MANAGEMENT & VERIFICATION
@@ -729,6 +923,18 @@ export const MasterAdminManagementPanel: React.FC<MasterAdminManagementPanelProp
         >
           <MenuIcon className="w-4 h-4" />
           <span>مدیریت منوها و زیرمنوها ({menus.length})</span>
+        </button>
+
+        <button
+          onClick={() => setAdminTab('content-links')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+            adminTab === 'content-links'
+              ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
+              : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'
+          }`}
+        >
+          <Type className="w-4 h-4" />
+          <span>مدیریت متون، بخش‌ها و پیوندها ({contentForm.customLinks?.length || 0})</span>
         </button>
 
         <button
@@ -2012,6 +2218,884 @@ export const MasterAdminManagementPanel: React.FC<MasterAdminManagementPanelProp
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 6: APP SECTIONS, DEFAULT TEXTS & LINKS MANAGER */}
+      {/* ========================================================================= */}
+      {adminTab === 'content-links' && (
+        <div className="space-y-6">
+          {/* Header Action Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <Type className="w-5 h-5" />
+                </div>
+                <h2 className="text-base font-bold text-white">
+                  مدیریت متون، پیوندها و بخش‌های سایت (Sections & Links Customizer)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-400">
+                امکان بازنویسی تمامی متون پیش‌فرض هدر، بنر اصلی، تریاژ هوشمند، گاوصندوق، فوتر و ایجاد و سفارشی‌سازی پیوندها
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleOpenCreateLink}
+                className="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-colors cursor-pointer shadow-lg shadow-cyan-500/20"
+              >
+                <Plus className="w-4 h-4" />
+                <span>ایجاد پیوند جدید</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveContentChanges}
+                className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-colors cursor-pointer shadow-lg shadow-amber-500/20"
+              >
+                <Save className="w-4 h-4" />
+                <span>ذخیره تمامی تغییرات متون</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('آیا از بازنشانی متون و پیوندهای کلیه بخش‌ها به تنظیمات اولیه اطمینان دارید؟')) {
+                    handleResetToDefaultCMS();
+                  }
+                }}
+                className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer"
+                title="بازگردانی به پیش‌فرض کارخانه"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">بازنشانی پیش‌فرض</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Section Sub-Nav Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 text-xs">
+            {[
+              { id: 'all', label: 'همه بخش‌ها', icon: Layers },
+              { id: 'header-brand', label: 'هدر و برندینگ', icon: ShieldCheck },
+              { id: 'hero', label: 'بنر اصلی و جستجو', icon: Sparkles },
+              { id: 'triage-vault', label: 'تریاژ هوش مصنوعی و گاوصندوق', icon: Brain },
+              { id: 'stats', label: 'کارت‌های آماری', icon: Award },
+              { id: 'footer', label: 'فوتر و ضمانت‌نامه‌ها', icon: Globe },
+              { id: 'links', label: `مدیریت پیوندها (${contentForm.customLinks?.length || 0})`, icon: Link2 },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveContentSection(tab.id as any)}
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    activeContentSection === tab.id
+                      ? 'bg-slate-100 text-slate-950 shadow-md'
+                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ========================================================= */}
+          {/* 1. HEADER & BRANDING */}
+          {/* ========================================================= */}
+          {(activeContentSection === 'all' || activeContentSection === 'header-brand') && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-bold text-white">متون بخش هدر و برندینگ (Header & Identity)</h3>
+                </div>
+                <span className="text-[11px] text-slate-400">نمایش در نوار بالای سایت و لوگو</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">نام برند سامانه:</label>
+                  <input
+                    type="text"
+                    value={contentForm.brandName || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, brandName: e.target.value })}
+                    placeholder="دادگستر"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">شعار سازمانی زیر لوگو:</label>
+                  <input
+                    type="text"
+                    value={contentForm.brandTagline || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, brandTagline: e.target.value })}
+                    placeholder="سامانه جامع هوشمند حقوقی و وکالت برخط"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">شماره تماس فوری و اورژانس قضایی:</label>
+                  <input
+                    type="text"
+                    value={contentForm.contactEmergencyPhone || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, contactEmergencyPhone: e.target.value })}
+                    placeholder="۰۲۱-۸۸۸۸۴۴۰۰"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">برچسب عنوان تماس اضطراری:</label>
+                  <input
+                    type="text"
+                    value={contentForm.contactEmergencyLabel || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, contactEmergencyLabel: e.target.value })}
+                    placeholder="پشتیبانی ۲۴ ساعته دعاوی فوری"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-slate-300 mb-1 font-semibold">متن نوار متحرک اعلان هدر (Announcement Ticker):</label>
+                  <textarea
+                    rows={2}
+                    value={contentForm.announcementTicker || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, announcementTicker: e.target.value })}
+                    placeholder="اعلان مهم..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 2. HERO BANNER & SEARCH */}
+          {/* ========================================================= */}
+          {(activeContentSection === 'all' || activeContentSection === 'hero') && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-bold text-white">متون بنر اصلی، جستجو و برچسب‌ها (Hero Section)</h3>
+                </div>
+                <span className="text-[11px] text-slate-400">صفحه اصلی پلتفرم</span>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-slate-300 mb-1 font-semibold">تیتر اصلی صفحه (Hero Headline):</label>
+                    <input
+                      type="text"
+                      value={contentForm.heroTitle || ''}
+                      onChange={(e) => setContentForm({ ...contentForm, heroTitle: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-slate-300 mb-1 font-semibold">زیرتیتر و توضیحات بنر (Hero Subtitle):</label>
+                    <textarea
+                      rows={2}
+                      value={contentForm.heroSubtitle || ''}
+                      onChange={(e) => setContentForm({ ...contentForm, heroSubtitle: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">برچسب نشان بالای تیتر (Badge):</label>
+                    <input
+                      type="text"
+                      value={contentForm.heroBadge || ''}
+                      onChange={(e) => setContentForm({ ...contentForm, heroBadge: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">متن راهنمای ورودی کادر جستجو (Placeholder):</label>
+                    <input
+                      type="text"
+                      value={contentForm.heroSearchPlaceholder || ''}
+                      onChange={(e) => setContentForm({ ...contentForm, heroSearchPlaceholder: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">متن دکمه شروع تریاژ هوشمند (CTA 1):</label>
+                    <input
+                      type="text"
+                      value={contentForm.heroTriageButtonText || ''}
+                      onChange={(e) => setContentForm({ ...contentForm, heroTriageButtonText: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">متن دکمه پیگیری در سامانه عدل ایران (CTA 2):</label>
+                    <input
+                      type="text"
+                      value={contentForm.heroTrackingButtonText || ''}
+                      onChange={(e) => setContentForm({ ...contentForm, heroTrackingButtonText: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Popular Search Tags Editor */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <label className="block text-slate-300 font-semibold">کلیدواژه‌های پرطرفدار جستجو (Popular Search Tags):</label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(contentForm.popularSearchTags || []).map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-lg text-slate-200"
+                      >
+                        <Tag className="w-3 h-3 text-amber-400" />
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePopularTag(tag)}
+                          className="hover:text-red-400 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 max-w-sm">
+                    <input
+                      type="text"
+                      placeholder="کلیدواژه جدید (مثلا: سرقفلی)..."
+                      value={newTagInput}
+                      onChange={(e) => setNewTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddPopularTag();
+                        }
+                      }}
+                      className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddPopularTag}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold cursor-pointer"
+                    >
+                      افزودن
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 3. AI TRIAGE & DOCUMENT VAULT */}
+          {/* ========================================================= */}
+          {(activeContentSection === 'all' || activeContentSection === 'triage-vault') && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-bold text-white">متون بخش تریاژ حقوقی هوش مصنوعی و امنیت گاوصندوق</h3>
+                </div>
+                <span className="text-[11px] text-slate-400">کارت تریاژ و هشدارهای امنیتی</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">عنوان کارت تریاژ هوشمند:</label>
+                  <input
+                    type="text"
+                    value={contentForm.triageCardTitle || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, triageCardTitle: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">متن وضعیت آنلاین موتور AI:</label>
+                  <input
+                    type="text"
+                    value={contentForm.triageCardStatusText || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, triageCardStatusText: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">نشان نسخه سال قوانین:</label>
+                  <input
+                    type="text"
+                    value={contentForm.triageCardLawYearBadge || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, triageCardLawYearBadge: e.target.value })}
+                    placeholder="قوانین ۱۴۰۳"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">متن دکمه تست آنلاین تریاژ:</label>
+                  <input
+                    type="text"
+                    value={contentForm.triageCardCtaText || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, triageCardCtaText: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">پیام حفظ محرمانگی وکالت:</label>
+                  <input
+                    type="text"
+                    value={contentForm.triageCardConfidentialityNotice || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, triageCardConfidentialityNotice: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">پیام سرعت پردازش و پاسخدهی:</label>
+                  <input
+                    type="text"
+                    value={contentForm.triageCardSpeedNotice || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, triageCardSpeedNotice: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-slate-300 mb-1 font-semibold">۴ ویژگی برجسته تریاژ (Bullet Points):</label>
+                  <div className="space-y-2">
+                    {(contentForm.triageCardFeatures || [
+                      'دسته‌بندی خودکار دعوا',
+                      'استخراج مواد قانونی',
+                      'تخمین ادله اثبات',
+                      'معرفی وکیل متخصص',
+                    ]).map((feature, fIdx) => (
+                      <div key={fIdx} className="flex items-center gap-2">
+                        <span className="text-amber-400 font-bold w-6 text-center">{fIdx + 1}.</span>
+                        <input
+                          type="text"
+                          value={feature}
+                          onChange={(e) => {
+                            const newFeatures = [...(contentForm.triageCardFeatures || [])];
+                            newFeatures[fIdx] = e.target.value;
+                            setContentForm({ ...contentForm, triageCardFeatures: newFeatures });
+                          }}
+                          className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-slate-300 mb-1 font-semibold">متن اطلاعیه امنیتی گاوصندوق اسناد (AES-256 Vault):</label>
+                  <textarea
+                    rows={2}
+                    value={contentForm.documentVaultSecurityNotice || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, documentVaultSecurityNotice: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-slate-300 mb-1 font-semibold">متن سلب مسئولیت قانونی تریاژ هوشمند (Disclaimer):</label>
+                  <textarea
+                    rows={2}
+                    value={contentForm.triageLegalDisclaimer || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, triageLegalDisclaimer: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 4. STATS CARDS */}
+          {/* ========================================================= */}
+          {(activeContentSection === 'all' || activeContentSection === 'stats') && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-bold text-white">کارت‌های آماری صفحه اصلی (Platform Statistics)</h3>
+                </div>
+                <span className="text-[11px] text-slate-400">۴ آمار کلیدی اعتماد سازمانی</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                {(contentForm.statsCards || []).map((stat, sIdx) => (
+                  <div key={stat.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="text-slate-400 font-bold">کارت آماری شماره {sIdx + 1}:</div>
+                    <div>
+                      <label className="block text-slate-400 mb-1 text-[11px]">مقدار یا عدد:</label>
+                      <input
+                        type="text"
+                        value={stat.value}
+                        onChange={(e) => {
+                          const updatedStats = [...(contentForm.statsCards || [])];
+                          updatedStats[sIdx] = { ...updatedStats[sIdx], value: e.target.value };
+                          setContentForm({ ...contentForm, statsCards: updatedStats });
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 mb-1 text-[11px]">عنوان و برچسب:</label>
+                      <input
+                        type="text"
+                        value={stat.label}
+                        onChange={(e) => {
+                          const updatedStats = [...(contentForm.statsCards || [])];
+                          updatedStats[sIdx] = { ...updatedStats[sIdx], label: e.target.value };
+                          setContentForm({ ...contentForm, statsCards: updatedStats });
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 mb-1 text-[11px]">تم رنگی کارت:</label>
+                      <select
+                        value={stat.color}
+                        onChange={(e) => {
+                          const updatedStats = [...(contentForm.statsCards || [])];
+                          updatedStats[sIdx] = { ...updatedStats[sIdx], color: e.target.value as any };
+                          setContentForm({ ...contentForm, statsCards: updatedStats });
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-white"
+                      >
+                        <option value="amber">طلایی (Amber)</option>
+                        <option value="emerald">سبز زمردی (Emerald)</option>
+                        <option value="cyan">آبی فیروزه‌ای (Cyan)</option>
+                        <option value="purple">بنفش (Purple)</option>
+                        <option value="blue">آبی تیره (Blue)</option>
+                        <option value="rose">قرمز گل‌بهی (Rose)</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 5. FOOTER & GUARANTEES */}
+          {/* ========================================================= */}
+          {(activeContentSection === 'all' || activeContentSection === 'footer') && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-amber-400" />
+                  <h3 className="text-sm font-bold text-white">متون فوتر، ضمانت‌نامه‌ها و حقوق مالکیت (Footer & Policies)</h3>
+                </div>
+                <span className="text-[11px] text-slate-400">انتهای تمامی صفحات سامانه</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="md:col-span-2">
+                  <label className="block text-slate-300 mb-1 font-semibold">متن مأموریت و چشم‌انداز در فوتر:</label>
+                  <textarea
+                    rows={2}
+                    value={contentForm.footerMissionText || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, footerMissionText: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-slate-300 mb-1 font-semibold">متن ضمانت ۱۰۰٪ بازگشت وجه مشاوره:</label>
+                  <textarea
+                    rows={2}
+                    value={contentForm.consultationGuaranteeText || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, consultationGuaranteeText: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">نشان امنیت ۱ (مجوز کانون وکلا):</label>
+                  <input
+                    type="text"
+                    value={contentForm.footerSecurityBadge1 || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, footerSecurityBadge1: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">نشان امنیت ۲ (معماری سرور):</label>
+                  <input
+                    type="text"
+                    value={contentForm.footerSecurityBadge2 || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, footerSecurityBadge2: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-slate-300 mb-1 font-semibold">متن حقوق مادی و معنوی (Copyright):</label>
+                  <input
+                    type="text"
+                    value={contentForm.footerCopyrightText || ''}
+                    onChange={(e) => setContentForm({ ...contentForm, footerCopyrightText: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 6. FULL CUSTOM LINKS MANAGER */}
+          {/* ========================================================= */}
+          {(activeContentSection === 'all' || activeContentSection === 'links') && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Link2 className="w-5 h-5 text-cyan-400" />
+                    <h3 className="text-base font-bold text-white">
+                      مدیریت جامع پیوندها و مسیرهای وب‌سایت ({contentForm.customLinks?.length || 0} پیوند)
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    ایجاد، ویرایش، تغییر مقصد (داخلی/خارجی)، تغییر دسته‌بندی و فعال یا غیرفعال‌سازی لینک‌های هدر، فوتر و خدمات
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenCreateLink}
+                  className="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-colors cursor-pointer shadow-lg shadow-cyan-500/20"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>افزودن پیوند جدید</span>
+                </button>
+              </div>
+
+              {/* Filters & Search for Links */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+                <div className="relative w-full sm:w-72">
+                  <input
+                    type="text"
+                    placeholder="جستجو در عنوان یا آدرس پیوند..."
+                    value={linkSearchQuery}
+                    onChange={(e) => setLinkSearchQuery(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl pr-9 pl-3 py-2 text-white placeholder-slate-500"
+                  />
+                  <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <span className="text-slate-400 whitespace-nowrap">دسته‌بندی:</span>
+                  <select
+                    value={linkFilterCategory}
+                    onChange={(e) => setLinkFilterCategory(e.target.value as any)}
+                    className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white w-full sm:w-auto"
+                  >
+                    <option value="all">همه دسته‌ها ({contentForm.customLinks?.length || 0})</option>
+                    <option value="header-top">نوار بالایی هدر (Header Top)</option>
+                    <option value="footer-services">خدمات و بخش‌های فوتر</option>
+                    <option value="footer-judicial">سامانه‌ها و مراجع قضایی</option>
+                    <option value="footer-quick">پیوندهای سریع و قوانین</option>
+                    <option value="action-banner">نوار اکشن (Action Banner)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Links Table / Card List */}
+              <div className="space-y-3">
+                {(contentForm.customLinks || [])
+                  .filter((link) => {
+                    if (linkFilterCategory !== 'all' && link.category !== linkFilterCategory) return false;
+                    if (linkSearchQuery.trim()) {
+                      const q = linkSearchQuery.trim().toLowerCase();
+                      return (
+                        link.title.toLowerCase().includes(q) ||
+                        link.urlOrTarget.toLowerCase().includes(q) ||
+                        (link.badge && link.badge.toLowerCase().includes(q))
+                      );
+                    }
+                    return true;
+                  })
+                  .map((link, idx) => {
+                    const getCategoryLabel = (cat: LinkCategory) => {
+                      switch (cat) {
+                        case 'header-top': return 'نوار بالای هدر';
+                        case 'header-nav': return 'منوی هدر';
+                        case 'footer-services': return 'خدمات در فوتر';
+                        case 'footer-judicial': return 'مراجع قضایی در فوتر';
+                        case 'footer-quick': return 'پیوند سریع در فوتر';
+                        case 'action-banner': return 'نوار اکشن';
+                      }
+                    };
+
+                    return (
+                      <div
+                        key={link.id}
+                        className={`p-4 rounded-2xl border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
+                          link.isActive
+                            ? 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
+                            : 'bg-slate-950/40 border-slate-900 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="flex flex-col gap-1 items-center shrink-0 pt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveLink(link.id, 'up')}
+                              disabled={idx === 0}
+                              className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 disabled:opacity-30 cursor-pointer"
+                              title="انتقال به بالا"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveLink(link.id, 'down')}
+                              disabled={idx === (contentForm.customLinks?.length || 0) - 1}
+                              className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 disabled:opacity-30 cursor-pointer"
+                              title="انتقال به پایین"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="text-sm font-bold text-white truncate">{link.title}</h4>
+                              <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-full">
+                                {getCategoryLabel(link.category)}
+                              </span>
+                              {link.badge && (
+                                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.2 rounded font-bold">
+                                  {link.badge}
+                                </span>
+                              )}
+                              {link.isExternal ? (
+                                <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                                  <ExternalLink className="w-2.5 h-2.5" /> تب جدید
+                                </span>
+                              ) : (
+                                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded">
+                                  داخلی
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-xs text-slate-400 font-mono truncate dir-ltr text-right">
+                              {link.urlOrTarget}
+                            </p>
+                            {link.description && (
+                              <p className="text-[11px] text-slate-400">{link.description}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleLinkActive(link.id)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                              link.isActive
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : 'bg-slate-800 text-slate-400 border border-slate-700'
+                            }`}
+                          >
+                            {link.isActive ? 'فعال در سایت' : 'غیرفعال'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditLink(link)}
+                            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors cursor-pointer"
+                            title="ویرایش پیوند"
+                          >
+                            <Edit className="w-4 h-4 text-amber-400" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`آیا از حذف پیوند «${link.title}» اطمینان دارید؟`)) {
+                                handleDeleteLink(link.id);
+                              }
+                            }}
+                            className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 transition-colors cursor-pointer"
+                            title="حذف پیوند"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CREATE / EDIT CUSTOM LINK */}
+      {/* ========================================================================= */}
+      {linkModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-cyan-500/40 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-cyan-400 font-bold">
+                <Link2 className="w-5 h-5" />
+                <span>{editingLink ? 'ویرایش مشخصات پیوند' : 'ایجاد پیوند سفارشی جدید'}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLinkModalOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveLink} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 mb-1 font-semibold">عنوان پیوند (Link Title):</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثلا: استعلام اصالت اسناد مالکیت..."
+                  value={linkTitle}
+                  onChange={(e) => setLinkTitle(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-1 font-semibold">مقصد پیوند یا آدرس (Target / URL):</label>
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    required
+                    placeholder="#lawyers یا https://example.ir یا page:legal-tariffs"
+                    value={linkUrlOrTarget}
+                    onChange={(e) => setLinkUrlOrTarget(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono dir-ltr text-right"
+                  />
+                  <div className="flex flex-wrap gap-1 text-[10px] text-slate-400">
+                    <span>پیشنهادهای آماده:</span>
+                    {['#lawyers', '#cases', '#consultations', '#calendar', '#documents', '#qna', '#triage', 'https://adliran.ir', 'page:legal-tariffs'].map((sugg) => (
+                      <button
+                        key={sugg}
+                        type="button"
+                        onClick={() => {
+                          setLinkUrlOrTarget(sugg);
+                          setLinkIsExternal(sugg.startsWith('http'));
+                        }}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded cursor-pointer"
+                      >
+                        {sugg}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">محل نمایش / دسته‌بندی:</label>
+                  <select
+                    value={linkCategory}
+                    onChange={(e) => setLinkCategory(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  >
+                    <option value="footer-services">خدمات و بخش‌ها (فوتر)</option>
+                    <option value="footer-judicial">سامانه‌ها و مراجع قضایی (فوتر)</option>
+                    <option value="footer-quick">پیوندهای سریع و قوانین (فوتر)</option>
+                    <option value="header-top">نوار بالای هدر (Header Top)</option>
+                    <option value="header-nav">منوی هدر (Header Nav)</option>
+                    <option value="action-banner">نوار اکشن (Action Banner)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">برچسب ویژه (Badge اختیاری):</label>
+                  <input
+                    type="text"
+                    placeholder="مثلا: جدید، رسمی، E2EE..."
+                    value={linkBadge}
+                    onChange={(e) => setLinkBadge(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 mb-1 font-semibold">توضیح کوتاه زیر پیوند (اختیاری):</label>
+                <input
+                  type="text"
+                  placeholder="توضیح تکمیلی یا کاربرد این پیوند..."
+                  value={linkDescription}
+                  onChange={(e) => setLinkDescription(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={linkIsExternal}
+                    onChange={(e) => setLinkIsExternal(e.target.checked)}
+                    className="accent-cyan-500 rounded"
+                  />
+                  <span>باز شدن در تب جدید مرورگر (External / Target _blank)</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={linkIsActive}
+                    onChange={(e) => setLinkIsActive(e.target.checked)}
+                    className="accent-emerald-500 rounded"
+                  />
+                  <span>فعال و منتشر شده در سایت</span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setLinkModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white cursor-pointer"
+                >
+                  انصراف
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold cursor-pointer shadow-lg shadow-cyan-500/20"
+                >
+                  {editingLink ? 'ذخیره تغییرات پیوند' : 'افزودن پیوند'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

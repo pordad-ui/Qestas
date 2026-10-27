@@ -93,6 +93,7 @@ import {
   DynamicPage,
   MenuItem,
   AdminAssistant,
+  CustomAppLink,
 } from './types/legal';
 
 import {
@@ -105,6 +106,7 @@ import {
   Heart,
   Server,
   Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function App() {
@@ -417,6 +419,41 @@ export default function App() {
     setTransactions((prev) => [newTx, ...prev]);
   };
 
+  // Custom Link Click Handler (Internal vs External vs Dynamic Pages)
+  const handleCustomLinkClick = (link: CustomAppLink) => {
+    if (link.isExternal) {
+      if (link.urlOrTarget.startsWith('tel:')) {
+        window.location.href = link.urlOrTarget;
+      } else {
+        window.open(link.urlOrTarget, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+
+    if (link.urlOrTarget.startsWith('#')) {
+      const target = link.urlOrTarget.replace('#', '');
+      if (target === 'triage') {
+        setIsTriageOpen(true);
+      } else {
+        setActiveTab(target);
+      }
+      return;
+    }
+
+    if (link.urlOrTarget.startsWith('page:')) {
+      const slug = link.urlOrTarget.replace('page:', '');
+      const foundPage = pages.find((p) => p.slug === slug);
+      if (foundPage) {
+        setSelectedPageForModal(foundPage);
+      }
+      return;
+    }
+
+    if (link.urlOrTarget.startsWith('http')) {
+      window.open(link.urlOrTarget, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
       {/* Top Header */}
@@ -433,6 +470,7 @@ export default function App() {
         menus={menus}
         pages={pages}
         onSelectPage={(page) => setSelectedPageForModal(page)}
+        cms={cms}
       />
 
       {/* Main Container */}
@@ -573,6 +611,8 @@ export default function App() {
               onDeleteAssistant={handleDeleteAssistant}
               activeAssistant={activeAssistant}
               onSelectActiveAssistant={(ast) => setActiveAssistant(ast)}
+              cms={cms}
+              onUpdateCMS={(newCMS) => setCms(newCMS)}
             />
           )}
         </div>
@@ -582,57 +622,105 @@ export default function App() {
       <footer className="bg-slate-950 border-t border-slate-800 text-xs text-slate-400 py-10 px-4">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Col 1: Identity & Mission */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
                   <Scale className="w-5 h-5 text-amber-400" />
                 </div>
-                <span className="text-base font-black text-white">دادگستر</span>
+                <span className="text-base font-black text-white">{cms.brandName || 'دادگستر'}</span>
               </div>
               <p className="text-slate-400 leading-relaxed text-[11px]">
-                پلتفرم تخصصی وکالت برخط، تریاژ هوشمند پرونده، مشاوره تصویری امن و پیگیری یکپارچه دادرسی الکترونیک در سراسر کشور.
+                {cms.footerMissionText || 'پلتفرم تخصصی وکالت برخط، تریاژ هوشمند پرونده، مشاوره تصویری امن و پیگیری یکپارچه دادرسی الکترونیک در سراسر کشور.'}
               </p>
+              <div className="pt-2 flex flex-col gap-1.5 text-[10px]">
+                {cms.footerSecurityBadge1 && (
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                    {cms.footerSecurityBadge1}
+                  </span>
+                )}
+                {cms.footerSecurityBadge2 && (
+                  <span className="flex items-center gap-1.5 text-cyan-400 font-medium">
+                    <Server className="w-3.5 h-3.5 shrink-0" />
+                    {cms.footerSecurityBadge2}
+                  </span>
+                )}
+              </div>
             </div>
 
+            {/* Col 2: Services Links */}
             <div>
               <h4 className="text-slate-200 font-bold mb-2">خدمات و بخش‌ها:</h4>
               <ul className="space-y-1.5 text-[11px] text-slate-400">
-                <li onClick={() => setIsTriageOpen(true)} className="hover:text-amber-400 cursor-pointer">تریاژ هوش مصنوعی پرونده</li>
-                <li onClick={() => setActiveTab('lawyers')} className="hover:text-amber-400 cursor-pointer">بانک وکلای پایه یک</li>
-                <li onClick={() => setActiveTab('cases')} className="hover:text-amber-400 cursor-pointer">پیگیری پرونده در سامانه ثنا</li>
-                <li onClick={() => setActiveTab('calendar')} className="hover:text-amber-400 cursor-pointer">تقویم جلسات دادگاه و مهلت‌ها</li>
+                {(cms.customLinks?.filter(l => l.isActive && l.category === 'footer-services') || []).map((link) => (
+                  <li
+                    key={link.id}
+                    onClick={() => handleCustomLinkClick(link)}
+                    className="hover:text-amber-400 cursor-pointer flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>{link.title}</span>
+                    {link.badge && (
+                      <span className="text-[9px] bg-slate-800 text-amber-300 border border-slate-700 px-1 rounded">
+                        {link.badge}
+                      </span>
+                    )}
+                  </li>
+                ))}
               </ul>
             </div>
 
+            {/* Col 3: Judicial Portals & Authorities */}
             <div>
-              <h4 className="text-slate-200 font-bold mb-2">امنیت و گواهینامه‌ها:</h4>
+              <h4 className="text-slate-200 font-bold mb-2">سامانه‌ها و مراجع قضایی:</h4>
               <ul className="space-y-1.5 text-[11px] text-slate-400">
-                <li className="flex items-center gap-1 text-emerald-400 font-medium">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  احراز هویت کانون وکلای دادگستری
-                </li>
-                <li className="flex items-center gap-1 text-cyan-400 font-medium">
-                  <Server className="w-3.5 h-3.5" />
-                  معماری Django + PostgreSQL RLS
-                </li>
-                <li>رمزنگاری ۲۵۶ بیتی اسناد و اوراق</li>
-                <li>تاییدیه سوییچ پرداخت الکترونیک شاپرک</li>
+                {(cms.customLinks?.filter(l => l.isActive && l.category === 'footer-judicial') || []).map((link) => (
+                  <li
+                    key={link.id}
+                    onClick={() => handleCustomLinkClick(link)}
+                    className="hover:text-cyan-400 cursor-pointer flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>{link.title}</span>
+                    {link.isExternal && <ExternalLink className="w-2.5 h-2.5 text-slate-500" />}
+                    {link.badge && (
+                      <span className="text-[9px] bg-slate-800 text-cyan-300 border border-slate-700 px-1 rounded">
+                        {link.badge}
+                      </span>
+                    )}
+                  </li>
+                ))}
               </ul>
             </div>
 
-            <div className="space-y-2">
-              <h4 className="text-slate-200 font-bold">پشتیبانی ۲۴ ساعته:</h4>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                {cms.contactEmergencyPhone}
-              </p>
-              <p className="text-[10px] text-amber-400/90 leading-relaxed bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                {cms.consultationGuaranteeText}
-              </p>
+            {/* Col 4: Quick Laws & 24/7 Support */}
+            <div className="space-y-2.5">
+              <h4 className="text-slate-200 font-bold">پشتیبانی و قوانین:</h4>
+              <ul className="space-y-1 text-[11px] text-slate-400 pb-1">
+                {(cms.customLinks?.filter(l => l.isActive && l.category === 'footer-quick') || []).map((link) => (
+                  <li
+                    key={link.id}
+                    onClick={() => handleCustomLinkClick(link)}
+                    className="hover:text-amber-400 cursor-pointer flex items-center gap-1.5 transition-colors"
+                  >
+                    <span>• {link.title}</span>
+                  </li>
+                ))}
+              </ul>
+              {cms.contactEmergencyPhone && (
+                <p className="text-[11px] text-slate-300 leading-relaxed font-semibold">
+                  {cms.contactEmergencyLabel ? `${cms.contactEmergencyLabel}: ` : ''}{cms.contactEmergencyPhone}
+                </p>
+              )}
+              {cms.consultationGuaranteeText && (
+                <p className="text-[10px] text-amber-400/90 leading-relaxed bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                  {cms.consultationGuaranteeText}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
-            <span>© کلیه حقوق مادی و معنوی برای سامانه جامع دادگستر محفوظ است.</span>
+            <span>{cms.footerCopyrightText || '© کلیه حقوق مادی و معنوی برای سامانه جامع دادگستر محفوظ است.'}</span>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsArchitectureOpen(true)}
