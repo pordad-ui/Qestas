@@ -22,6 +22,8 @@ import {
   Phone,
 } from 'lucide-react';
 import { User, UserRole, MenuItem, DynamicPage, CMSContent } from '../types/legal';
+import { LegalScalesLogo } from './LegalScalesLogo';
+import { MenuIcon } from '../utils/menuIcons';
 
 interface HeaderProps {
   currentUser: User;
@@ -159,6 +161,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className="hidden lg:inline-flex items-center gap-1 text-[11px] text-slate-300 hover:text-amber-400 transition-colors cursor-pointer"
               >
+                <MenuIcon nameOrTarget={link.urlOrTarget || link.title} className="w-3 h-3 text-amber-400/90 shrink-0" />
                 <span>{link.title}</span>
                 {link.badge && (
                   <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-bold">
@@ -229,15 +232,15 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setActiveTab('dashboard')}
               className="cursor-pointer flex items-center gap-2.5 group"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-300 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
-                <Scale className="w-6 h-6 text-slate-950 font-bold" />
+              <div className="relative flex items-center justify-center p-1.5 rounded-2xl bg-gradient-to-b from-slate-800 to-slate-900 border border-amber-500/30 shadow-lg shadow-amber-500/10 group-hover:border-amber-400/60 transition-all">
+                <LegalScalesLogo size="md" variant="gold" interactive showRays />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xl font-black bg-gradient-to-l from-white via-slate-100 to-amber-200 bg-clip-text text-transparent">
                     {cms?.brandName || 'دادگستر'}
                   </span>
-                  <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded border border-amber-500/40">
+                  <span className="text-[10px] bg-amber-500/15 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">
                     وکالت برخط
                   </span>
                 </div>
@@ -344,30 +347,34 @@ export const Header: React.FC<HeaderProps> = ({
                             handleMenuTargetClick(menu.targetTabOrSlug);
                           }
                         }}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                           isDropdownOpen
-                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                            ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                             : 'text-slate-300 hover:text-white hover:bg-slate-800'
                         }`}
                       >
+                        <MenuIcon nameOrTarget={menu.targetTabOrSlug || menu.title} className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                         <span>{menu.title}</span>
                         {hasSubmenus && <ChevronDown className="w-3 h-3 text-slate-400" />}
                       </button>
 
-                      {/* Dropdown for Submenus */}
+                      {/* Dropdown for Submenus with Icons */}
                       {hasSubmenus && isDropdownOpen && (
-                        <div className="absolute top-full right-0 mt-1 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-50">
+                        <div className="absolute top-full right-0 mt-1.5 w-60 bg-slate-900/98 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl p-1.5 z-50 divide-y divide-slate-800/40">
                           {menu.submenus!
                             .filter((s) => s.isActive)
                             .map((sub) => (
                               <button
                                 key={sub.id}
                                 onClick={() => handleMenuTargetClick(sub.targetTabOrSlug)}
-                                className="w-full text-right p-2 rounded-lg text-[11px] text-slate-200 hover:bg-slate-800 hover:text-amber-300 transition-colors flex items-center justify-between cursor-pointer"
+                                className="w-full text-right p-2.5 rounded-lg text-xs text-slate-200 hover:bg-slate-800 hover:text-amber-300 transition-colors flex items-center justify-between cursor-pointer group"
                               >
-                                <span>{sub.title}</span>
+                                <div className="flex items-center gap-2.5">
+                                  <MenuIcon nameOrTarget={sub.targetTabOrSlug || sub.title} className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400 transition-colors shrink-0" />
+                                  <span>{sub.title}</span>
+                                </div>
                                 {sub.targetTabOrSlug.startsWith('page:') && (
-                                  <ExternalLink className="w-3 h-3 text-slate-500" />
+                                  <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-slate-400" />
                                 )}
                               </button>
                             ))}

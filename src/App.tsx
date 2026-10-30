@@ -1,64 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Header,
-} from './components/Header';
-import {
-  HeroBanner,
-} from './components/HeroBanner';
-import {
-  DashboardOverview,
-} from './components/DashboardOverview';
-import {
-  LawyerDirectory,
-} from './components/LawyerDirectory';
-import {
-  LawyerProfileModal,
-} from './components/LawyerProfileModal';
-import {
-  BookingAndPaymentModal,
-} from './components/BookingAndPaymentModal';
-import {
-  AITriageModal,
-} from './components/AITriageModal';
-import {
-  CaseTrackingView,
-} from './components/CaseTrackingView';
-import {
-  EncryptedChatAndVideo,
-} from './components/EncryptedChatAndVideo';
-import {
-  SmartCalendarView,
-} from './components/SmartCalendarView';
-import {
-  SMSNotificationsView,
-} from './components/SMSNotificationsView';
-import {
-  DocumentVaultView,
-} from './components/DocumentVaultView';
-import {
-  LegalQnAView,
-} from './components/LegalQnAView';
-import {
-  LawyerFinancialDashboard,
-} from './components/LawyerFinancialDashboard';
-import {
-  AdminVerificationPanel,
-} from './components/AdminVerificationPanel';
-import {
-  MasterAdminManagementPanel,
-} from './components/MasterAdminManagementPanel';
-import {
-  DynamicPageModal,
-} from './components/DynamicPageModal';
-import {
-  CMSManagerModal,
-} from './components/CMSManagerModal';
-import {
-  ArchitectureModal,
-} from './components/ArchitectureModal';
-import {
-  AuthModal,
-} from './components/AuthModal';
+  Menu,
+  Bell,
+  Home,
+  Briefcase,
+  Landmark,
+  User,
+  Gavel,
+  Check,
+  Calendar,
+  Sparkles,
+  Phone,
+  FileText,
+  CreditCard,
+  Sliders,
+  LogIn,
+  ChevronLeft,
+  Lock,
+  BookOpen,
+} from 'lucide-react';
+
+import { MobileStatusBar } from './components/MobileStatusBar';
+import { MobileSideDrawer } from './components/MobileSideDrawer';
+import { MobileAnnouncementBanner } from './components/MobileAnnouncementBanner';
+import { MobileServicesGrid, AppFeatureItem, DEFAULT_APP_FEATURES } from './components/MobileServicesGrid';
+import { MobileCaseDetailsSheet } from './components/MobileCaseDetailsSheet';
+import { MobileAblaghiehSheet } from './components/MobileAblaghiehSheet';
+import { MobileFilesView } from './components/MobileFilesView';
+import { MobileBankView } from './components/MobileBankView';
+import { MobileProfileView } from './components/MobileProfileView';
+import { LegalScalesLogo } from './components/LegalScalesLogo';
+import { AdminCMSModal } from './components/AdminCMSModal';
+import { EncryptedChatAndVideo } from './components/EncryptedChatAndVideo';
+
+// Existing functional modals
+import { AuthModal } from './components/AuthModal';
+import { AITriageModal } from './components/AITriageModal';
+import { LawyerDirectory } from './components/LawyerDirectory';
+import { LawyerProfileModal } from './components/LawyerProfileModal';
+import { BookingAndPaymentModal } from './components/BookingAndPaymentModal';
+import { DocumentVaultView } from './components/DocumentVaultView';
+import { SmartCalendarView } from './components/SmartCalendarView';
+import { LegalQnAView } from './components/LegalQnAView';
+import { ArchitectureModal } from './components/ArchitectureModal';
 
 import {
   INITIAL_USERS,
@@ -70,15 +54,10 @@ import {
   INITIAL_QNA,
   INITIAL_CALENDAR_EVENTS,
   INITIAL_SMS_LOGS,
-  INITIAL_CMS,
-  INITIAL_COMMISSION_SETTINGS,
-  INITIAL_PAGES,
-  INITIAL_MENUS,
-  INITIAL_ADMIN_ASSISTANTS,
 } from './data/mockData';
 
 import {
-  User,
+  User as UserType,
   Lawyer,
   LegalCase,
   CaseDocument,
@@ -87,709 +66,623 @@ import {
   LegalQnAItem,
   CalendarEvent,
   SMSNotificationLog,
-  CMSContent,
-  LawyerReview,
-  PlatformCommissionSettings,
-  DynamicPage,
-  MenuItem,
-  AdminAssistant,
-  CustomAppLink,
 } from './types/legal';
 
-import {
-  Scale,
-  ShieldCheck,
-  Phone,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
-  Heart,
-  Server,
-  Sparkles,
-  ExternalLink,
-} from 'lucide-react';
-
 export default function App() {
-  // Global State
-  const [allUsers, setAllUsers] = useState<User[]>(INITIAL_USERS);
-  const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[0]); // Starts as Client
+  // Global Data State
+  const [allUsers, setAllUsers] = useState<UserType[]>(INITIAL_USERS);
+  const [currentUser, setCurrentUser] = useState<UserType>(INITIAL_USERS[0]);
   const [lawyers, setLawyers] = useState<Lawyer[]>(INITIAL_LAWYERS);
   const [cases, setCases] = useState<LegalCase[]>(INITIAL_CASES);
   const [documents, setDocuments] = useState<CaseDocument[]>(INITIAL_DOCUMENTS);
   const [consultations, setConsultations] = useState<ConsultationSession[]>(INITIAL_CONSULTATIONS);
   const [transactions, setTransactions] = useState<PaymentTransaction[]>(INITIAL_TRANSACTIONS);
-  const [qnaList, setQnaList] = useState<LegalQnAItem[]>(INITIAL_QNA);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(INITIAL_CALENDAR_EVENTS);
   const [smsLogs, setSmsLogs] = useState<SMSNotificationLog[]>(INITIAL_SMS_LOGS);
-  const [cms, setCms] = useState<CMSContent>(INITIAL_CMS);
+  const [qnaList, setQnaList] = useState<LegalQnAItem[]>(INITIAL_QNA);
 
-  // Master Admin & Dynamic CMS States
-  const [commissionSettings, setCommissionSettings] = useState<PlatformCommissionSettings>(
-    INITIAL_COMMISSION_SETTINGS
-  );
-  const [pages, setPages] = useState<DynamicPage[]>(INITIAL_PAGES);
-  const [menus, setMenus] = useState<MenuItem[]>(INITIAL_MENUS);
-  const [assistants, setAssistants] = useState<AdminAssistant[]>(INITIAL_ADMIN_ASSISTANTS);
-  const [activeAssistant, setActiveAssistant] = useState<AdminAssistant>(INITIAL_ADMIN_ASSISTANTS[0]);
-  const [selectedPageForModal, setSelectedPageForModal] = useState<DynamicPage | null>(null);
+  // AppFeature CMS State (Soft Delete / Hide Toggle)
+  const [appFeatures, setAppFeatures] = useState<AppFeatureItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('dadgostar_app_features_v3');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_APP_FEATURES;
+  });
 
-  // Active Navigation Tab
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  useEffect(() => {
+    try {
+      localStorage.setItem('dadgostar_app_features_v3', JSON.stringify(appFeatures));
+    } catch {}
+  }, [appFeatures]);
 
-  // Modal States
-  const [isTriageOpen, setIsTriageOpen] = useState(false);
-  const [isCMSOpen, setIsCMSOpen] = useState(false);
-  const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
+  // Active Bottom Navigation Tab: 'home' | 'cases' | 'wallet' | 'profile'
+  const [activeNavTab, setActiveNavTab] = useState<'home' | 'cases' | 'wallet' | 'profile'>('home');
+
+  // Drawer & Modal States
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAdminCMSOpen, setIsAdminCMSOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isCaseDetailsOpen, setIsCaseDetailsOpen] = useState(false);
+  const [isAblaghiehOpen, setIsAblaghiehOpen] = useState(false);
+  const [isTriageOpen, setIsTriageOpen] = useState(false);
+  const [isLawyersDirectoryOpen, setIsLawyersDirectoryOpen] = useState(false);
+  const [isDocumentsVaultOpen, setIsDocumentsVaultOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isQnAOpen, setIsQnAOpen] = useState(false);
+  const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
+  const [isEncryptedConsultationOpen, setIsEncryptedConsultationOpen] = useState(false);
   const [selectedLawyerForProfile, setSelectedLawyerForProfile] = useState<Lawyer | null>(null);
   const [selectedLawyerForBooking, setSelectedLawyerForBooking] = useState<Lawyer | null>(null);
-  const [bookingServiceType, setBookingServiceType] = useState<string>('مشاوره تصویری ۴۵ دقیقه');
-  const [lawyerDirectoryQuery, setLawyerDirectoryQuery] = useState<string>('');
-  const [activeCallLawyerId, setActiveCallLawyerId] = useState<string | null>(null);
-  const [autoStartCall, setAutoStartCall] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeSubMenuPill, setActiveSubMenuPill] = useState<string>('همه');
 
-  // Persona switching
-  const handleSwitchUser = (userId: string) => {
-    const found = allUsers.find((u) => u.id === userId);
-    if (found) {
-      setCurrentUser(found);
-      // Adjust active tab if lawyer tab was active
-      if (found.role !== 'lawyer' && activeTab === 'financial') {
-        setActiveTab('dashboard');
-      }
-      if (found.role !== 'admin' && (activeTab === 'admin-verifications' || activeTab === 'master-admin')) {
-        setActiveTab('dashboard');
-      }
-    }
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((cur) => (cur === msg ? null : cur));
+    }, 3500);
   };
 
-  // Payment Success Handler
-  const handlePaymentSuccess = (consultation: ConsultationSession, transaction: PaymentTransaction) => {
-    setConsultations((prev) => [consultation, ...prev]);
-    setTransactions((prev) => [transaction, ...prev]);
+  // Current Featured Case
+  const currentCase = cases[0];
+  const assignedLawyer = lawyers.find((l) => l.id === currentCase?.lawyerId) || lawyers[0];
 
-    // Deduct or adjust wallet / transaction
-    setCurrentUser((prev) => ({
-      ...prev,
-      walletBalance: Math.max(0, prev.walletBalance - transaction.amount),
-    }));
-
-    // Auto-generate SMS Confirmation Log
-    const newSMS: SMSNotificationLog = {
-      id: `sms-${Date.now()}`,
-      recipientPhone: currentUser.phone,
-      recipientName: currentUser.name,
-      recipientRole: currentUser.role,
-      type: 'تایید مشاوره',
-      message: `موکل گرامی جناب ${currentUser.name}، وقت مشاوره حقوقی شما با ${consultation.lawyerName} برای تاریخ ${consultation.scheduledDate} ساعت ${consultation.scheduledTime} ثبت و هزینه پرداخت شد. کد پیگیری: ${transaction.transactionRef}`,
-      timestamp: new Date().toLocaleDateString('fa-IR') + ' - ' + new Date().toLocaleTimeString('fa-IR'),
-      status: 'تحویل داده شده',
-    };
-    setSmsLogs((prev) => [newSMS, ...prev]);
-
-    // Auto-add to calendar
-    const newCalEvent: CalendarEvent = {
-      id: `cal-${Date.now()}`,
-      title: `مشاوره ${consultation.type} با ${consultation.lawyerName}`,
-      date: consultation.scheduledDate,
-      time: consultation.scheduledTime,
-      type: 'مشاوره آنلاین',
-      reminderMinutesBefore: 60,
-      isCompleted: false,
-      notes: `لینک اتاق اختصاصی: ${consultation.meetingRoomId}`,
-    };
-    setCalendarEvents((prev) => [newCalEvent, ...prev]);
-  };
-
-  // Add Lawyer Review
-  const handleAddReview = (lawyerId: string, review: Omit<LawyerReview, 'id'>) => {
-    setLawyers((prev) =>
-      prev.map((lawyer) => {
-        if (lawyer.id === lawyerId) {
-          const newReview: LawyerReview = {
-            id: `rev-${Date.now()}`,
-            ...review,
-          };
-          const updatedReviews = [newReview, ...lawyer.reviews];
-          const newRating =
-            updatedReviews.reduce((sum, r) => sum + r.rating, 0) / updatedReviews.length;
-          return {
-            ...lawyer,
-            reviews: updatedReviews,
-            reviewCount: updatedReviews.length,
-            rating: Number(newRating.toFixed(2)),
-          };
-        }
-        return lawyer;
-      })
-    );
-  };
-
-  // Add Case Document
-  const handleUploadDocument = (doc: Omit<CaseDocument, 'id' | 'uploadDate'>) => {
-    const newDoc: CaseDocument = {
-      id: `doc-${Date.now()}`,
-      uploadDate: new Date().toLocaleDateString('fa-IR'),
-      ...doc,
-    };
-    setDocuments((prev) => [newDoc, ...prev]);
-  };
-
-  // Add Calendar Event
-  const handleAddCalendarEvent = (event: Omit<CalendarEvent, 'id' | 'isCompleted'>) => {
-    const newEvent: CalendarEvent = {
-      id: `cal-${Date.now()}`,
-      isCompleted: false,
-      ...event,
-    };
-    setCalendarEvents((prev) => [newEvent, ...prev]);
-  };
-
-  // Toggle Calendar Event Complete
-  const handleToggleCalendarEvent = (eventId: string) => {
-    setCalendarEvents((prev) =>
-      prev.map((e) => (e.id === eventId ? { ...e, isCompleted: !e.isCompleted } : e))
-    );
-  };
-
-  // Send Custom SMS
-  const handleSendCustomSMS = (log: Omit<SMSNotificationLog, 'id' | 'timestamp' | 'status'>) => {
-    const newLog: SMSNotificationLog = {
-      id: `sms-${Date.now()}`,
-      timestamp: new Date().toLocaleDateString('fa-IR') + ' - ' + new Date().toLocaleTimeString('fa-IR'),
-      status: 'تحویل داده شده',
-      ...log,
-    };
-    setSmsLogs((prev) => [newLog, ...prev]);
-  };
-
-  // Add Legal Question
-  const handleAskQuestion = (item: Omit<LegalQnAItem, 'id' | 'views' | 'answers'>) => {
-    const newItem: LegalQnAItem = {
-      id: `qna-${Date.now()}`,
-      views: 1,
-      answers: [],
-      ...item,
-    };
-    setQnaList((prev) => [newItem, ...prev]);
-  };
-
-  // Add Lawyer Answer to Q&A
-  const handleAddAnswer = (questionId: string, answerText: string, relevantArticles: string[]) => {
-    setQnaList((prev) =>
-      prev.map((q) => {
-        if (q.id === questionId) {
-          return {
-            ...q,
-            answers: [
-              ...q.answers,
-              {
-                id: `ans-${Date.now()}`,
-                lawyerId: currentUser.id,
-                lawyerName: currentUser.name,
-                lawyerAvatar: currentUser.avatar,
-                lawyerTitle: 'وکیل پایه یک دادگستری',
-                answer: answerText,
-                date: new Date().toLocaleDateString('fa-IR'),
-                upvotes: 0,
-                isVerifiedBest: true,
-                relevantArticles,
-              },
-            ],
-          };
-        }
-        return q;
-      })
-    );
-  };
-
-  // Admin Approve Lawyer
+  // Lawyer Approval Handler (Admin CMS)
   const handleApproveLawyer = (lawyerId: string) => {
     setLawyers((prev) =>
       prev.map((l) =>
         l.id === lawyerId ? { ...l, isVerified: true, verificationStatus: 'approved' } : l
       )
     );
+    showToast('پروانه وکالت با موفقیت تایید گردید و دسترسی وکیل به سامانه فعال شد.');
   };
 
-  // Admin Reject Lawyer
+  // Lawyer Rejection Handler (Admin CMS with reason)
   const handleRejectLawyer = (lawyerId: string, reason: string) => {
     setLawyers((prev) =>
       prev.map((l) =>
-        l.id === lawyerId ? { ...l, isVerified: false, verificationStatus: 'rejected' } : l
+        l.id === lawyerId
+          ? { ...l, isVerified: false, verificationStatus: 'rejected', rejection_reason: reason }
+          : l
       )
     );
-    // Log SMS rejection to lawyer
-    const targetLawyer = lawyers.find((l) => l.id === lawyerId);
-    if (targetLawyer) {
-      setSmsLogs((prev) => [
-        {
-          id: `sms-${Date.now()}`,
-          recipientPhone: targetLawyer.phone,
-          recipientName: targetLawyer.name,
-          recipientRole: 'lawyer',
-          type: 'مهلت قانونی',
-          message: `همکار گرامی ${targetLawyer.name}، مدارک ارسالی شما به دلیل زیر توسط مدیر سامانه تایید نشد: ${reason}. لطفاً جهت اصلاح به کارتابل مراجعه فرمایید.`,
-          timestamp: new Date().toLocaleDateString('fa-IR'),
-          status: 'تحویل داده شده',
-        },
-        ...prev,
-      ]);
-    }
-  };
-
-  // Master Admin: Update Lawyer Details
-  const handleUpdateLawyer = (updatedLawyer: Lawyer) => {
-    setLawyers((prev) => prev.map((l) => (l.id === updatedLawyer.id ? updatedLawyer : l)));
-  };
-
-  // Master Admin: Delete Lawyer
-  const handleDeleteLawyer = (lawyerId: string) => {
-    setLawyers((prev) => prev.filter((l) => l.id !== lawyerId));
-  };
-
-  // Master Admin: Update Platform Commission Settings
-  const handleUpdateCommissionSettings = (newSettings: PlatformCommissionSettings) => {
-    setCommissionSettings(newSettings);
-  };
-
-  // Master Admin: Page Builder CRUD
-  const handleCreatePage = (newPage: Omit<DynamicPage, 'id' | 'views' | 'updatedAt'>) => {
-    const created: DynamicPage = {
-      id: `page-${Date.now()}`,
-      views: 0,
-      updatedAt: new Date().toLocaleDateString('fa-IR'),
-      ...newPage,
+    const newSMS: SMSNotificationLog = {
+      id: `sms-${Date.now()}`,
+      recipientPhone: '۰۹۱۲۳۴۵۶۷۸۹',
+      recipientName: 'وکیل متقاضی',
+      recipientRole: 'lawyer',
+      type: 'مهلت قانونی',
+      message: `همکار گرامی، مدارک پروانه وکالت شما به دلیل زیر تایید نگردید: ${reason}. لطفاً جهت ویرایش اقدام فرمایید.`,
+      timestamp: new Date().toLocaleDateString('fa-IR'),
+      status: 'تحویل داده شده',
     };
-    setPages((prev) => [created, ...prev]);
+    setSmsLogs((prev) => [newSMS, ...prev]);
+    showToast('رد مدارک وکیل در سیستم ثبت و پیامک با ذکر دلیل به ایشان ارسال شد.');
   };
 
-  const handleUpdatePage = (updatedPage: DynamicPage) => {
-    setPages((prev) => prev.map((p) => (p.id === updatedPage.id ? updatedPage : p)));
+  // Toggle Feature Visibility (Soft Delete / Hide)
+  const handleToggleFeatureVisibility = (featureId: string) => {
+    setAppFeatures((prev) =>
+      prev.map((f) => (f.id === featureId ? { ...f, is_hidden: !f.is_hidden } : f))
+    );
+    showToast('وضعیت انتشار بخش در اپلیکیشن بروزرسانی شد.');
   };
 
-  const handleDeletePage = (pageId: string) => {
-    setPages((prev) => prev.filter((p) => p.id !== pageId));
+  // Update Feature Title
+  const handleUpdateFeatureTitle = (featureId: string, newTitle: string) => {
+    setAppFeatures((prev) =>
+      prev.map((f) => (f.id === featureId ? { ...f, title: newTitle } : f))
+    );
+    showToast('عنوان خدمت بروزرسانی شد.');
   };
 
-  // Master Admin: Menu Builder
-  const handleUpdateMenus = (newMenus: MenuItem[]) => {
-    setMenus(newMenus);
-  };
-
-  // Master Admin: RBAC Assistants Management
-  const handleAddAssistant = (newAssistant: Omit<AdminAssistant, 'id' | 'lastLogin'>) => {
-    const created: AdminAssistant = {
-      id: `ast-${Date.now()}`,
-      lastLogin: 'هم‌اکنون',
-      ...newAssistant,
-    };
-    setAssistants((prev) => [...prev, created]);
-  };
-
-  const handleUpdateAssistant = (updatedAssistant: AdminAssistant) => {
-    setAssistants((prev) => prev.map((a) => (a.id === updatedAssistant.id ? updatedAssistant : a)));
-    if (activeAssistant.id === updatedAssistant.id) {
-      setActiveAssistant(updatedAssistant);
+  // Grid Service Selection
+  const handleSelectService = (slug: string) => {
+    switch (slug) {
+      case 'case-tracking':
+        setIsCaseDetailsOpen(true);
+        break;
+      case 'lawyer-bank':
+        setIsLawyersDirectoryOpen(true);
+        break;
+      case 'legal-services':
+        setIsTriageOpen(true);
+        break;
+      case 'law-database':
+        setIsQnAOpen(true);
+        break;
+      case 'online-consultation':
+        setIsEncryptedConsultationOpen(true);
+        break;
+      case 'drafting':
+        setIsDocumentsVaultOpen(true);
+        break;
+      default:
+        setIsTriageOpen(true);
     }
   };
 
-  const handleDeleteAssistant = (assistantId: string) => {
-    setAssistants((prev) => prev.filter((a) => a.id !== assistantId));
-    if (activeAssistant.id === assistantId) {
-      setActiveAssistant(assistants[0]);
-    }
+  // Payment Handler
+  const handlePaymentSuccess = (consultation: ConsultationSession, transaction: PaymentTransaction) => {
+    setConsultations((prev) => [consultation, ...prev]);
+    setTransactions((prev) => [transaction, ...prev]);
+    setCurrentUser((prev) => ({
+      ...prev,
+      walletBalance: Math.max(0, prev.walletBalance - transaction.amount),
+    }));
+    showToast('حق‌المشاوره با موفقیت پرداخت و جلسه ثبت گردید.');
   };
 
-  // Withdraw Request by Lawyer
-  const handleWithdrawRequest = (amount: number, sheba: string) => {
+  // Charge Wallet
+  const handleChargeWallet = (amount: number) => {
+    setCurrentUser((prev) => ({
+      ...prev,
+      walletBalance: (prev.walletBalance || 0) + amount,
+    }));
     const newTx: PaymentTransaction = {
       id: `tx-${Date.now()}`,
-      transactionRef: `PAYA-${Math.floor(10000000 + Math.random() * 90000000)}`,
+      transactionRef: `SHAPARAK-${Math.floor(10000000 + Math.random() * 90000000)}`,
       rrn: String(Math.floor(100000000000 + Math.random() * 900000000000)),
-      payerName: 'سامانه دادگستر (حساب امانی)',
-      receiverName: currentUser.name,
+      payerName: currentUser.name,
+      receiverName: 'کیف پول کاربری دادگستر',
       amount,
-      serviceTitle: 'تسویه حواله پایا به شماره شبا وکیل',
-      date: new Date().toLocaleDateString('fa-IR') + ' - ' + new Date().toLocaleTimeString('fa-IR'),
+      serviceTitle: 'افزایش اعتبار آنلاین از درگاه شاپرک',
+      date: new Date().toLocaleDateString('fa-IR'),
       status: 'موفق',
       gateway: 'زرین‌پال شاپرک',
-      cardNumberMasked: sheba,
+      cardNumberMasked: '۵۰۲۲-۲۹**-****-۶۱۷۴',
     };
     setTransactions((prev) => [newTx, ...prev]);
-  };
-
-  // Custom Link Click Handler (Internal vs External vs Dynamic Pages)
-  const handleCustomLinkClick = (link: CustomAppLink) => {
-    if (link.isExternal) {
-      if (link.urlOrTarget.startsWith('tel:')) {
-        window.location.href = link.urlOrTarget;
-      } else {
-        window.open(link.urlOrTarget, '_blank', 'noopener,noreferrer');
-      }
-      return;
-    }
-
-    if (link.urlOrTarget.startsWith('#')) {
-      const target = link.urlOrTarget.replace('#', '');
-      if (target === 'triage') {
-        setIsTriageOpen(true);
-      } else {
-        setActiveTab(target);
-      }
-      return;
-    }
-
-    if (link.urlOrTarget.startsWith('page:')) {
-      const slug = link.urlOrTarget.replace('page:', '');
-      const foundPage = pages.find((p) => p.slug === slug);
-      if (foundPage) {
-        setSelectedPageForModal(foundPage);
-      }
-      return;
-    }
-
-    if (link.urlOrTarget.startsWith('http')) {
-      window.open(link.urlOrTarget, '_blank', 'noopener,noreferrer');
-    }
+    showToast(`مبلغ ${amount.toLocaleString('fa-IR')} تومان به کیف پول شما افزوده شد.`);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
-      {/* Top Header */}
-      <Header
-        currentUser={currentUser}
-        onSwitchUser={handleSwitchUser}
-        allUsers={allUsers}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenCMS={() => setIsCMSOpen(true)}
-        onOpenArchitecture={() => setIsArchitectureOpen(true)}
-        onOpenTriage={() => setIsTriageOpen(true)}
-        smsCount={smsLogs.length}
-        menus={menus}
-        pages={pages}
-        onSelectPage={(page) => setSelectedPageForModal(page)}
-        cms={cms}
-      />
+    <div className="min-h-screen bg-[#070b14] flex justify-center selection:bg-[#F59E0B]/30 selection:text-[#F59E0B] font-sans antialiased">
+      {/* Native Mobile Screen Shell */}
+      <div className="w-full max-w-[430px] min-h-screen bg-[#0B1120] text-slate-100 flex flex-col relative shadow-[0_0_60px_rgba(0,0,0,0.8)] border-x border-slate-800/40">
+        
+        {/* Native Mobile Status Bar */}
+        <MobileStatusBar />
 
-      {/* Main Container */}
-      <main className="flex-1 pb-16">
-        {/* If on Dashboard, show Hero Banner */}
-        {activeTab === 'dashboard' && (
-          <HeroBanner
-            cms={cms}
-            onOpenTriage={() => setIsTriageOpen(true)}
-            onSearchLawyer={(query) => {
-              setLawyerDirectoryQuery(query);
-              setActiveTab('lawyers');
-            }}
-            onGoToCases={() => setActiveTab('cases')}
-          />
+        {/* 1. TOP APP BAR */}
+        <header className="h-14 px-4 bg-[#0B1120]/90 backdrop-blur-md border-b border-slate-800/80 sticky top-11 z-30 flex items-center justify-between">
+          {/* Left Slot: Hamburger menu icon */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsDrawerOpen(true)}
+              className="w-10 h-10 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              title="منوی اصلی"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsAdminCMSOpen(true)}
+              className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/20 transition-colors cursor-pointer"
+              title="پنل مدیریت CMS"
+            >
+              <Sliders className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Center Slot: App Logo & Brand */}
+          <div className="flex items-center gap-2">
+            <LegalScalesLogo size="xs" variant="gold" />
+            <span className="text-sm font-black tracking-tight text-white">دادگستر</span>
+          </div>
+
+          {/* Right Slot: Notification & Profile icons */}
+          <div className="flex items-center gap-2">
+            {/* Notification Bell */}
+            <button
+              onClick={() => setIsAblaghiehOpen(true)}
+              className="w-9 h-9 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer relative"
+              title="ابلاغیه‌های قضایی"
+            >
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#F59E0B] animate-ping" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#F59E0B]" />
+            </button>
+
+            {/* Profile Avatar */}
+            <div
+              onClick={() => setActiveNavTab('profile')}
+              className="relative cursor-pointer group"
+              title="پروفایل کاربری"
+            >
+              <img
+                src="/src/assets/images/client_profile_avatar_1793192628292.jpg"
+                alt={currentUser.name}
+                referrerPolicy="no-referrer"
+                className="w-9 h-9 rounded-xl object-cover ring-2 ring-[#F59E0B]/60 ring-offset-1 ring-offset-[#0B1120] group-hover:scale-105 transition-transform"
+              />
+              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#0B1120]" />
+            </div>
+          </div>
+        </header>
+
+        {/* In-app Toast Banner */}
+        {toastMessage && (
+          <div className="mx-4 mt-2 p-2.5 rounded-xl bg-amber-500/15 border border-[#F59E0B]/40 text-amber-300 text-xs flex items-center justify-between shadow-lg animate-fade-in z-20">
+            <span>{toastMessage}</span>
+            <button onClick={() => setToastMessage(null)} className="text-amber-400 font-bold px-1.5">×</button>
+          </div>
         )}
 
-        {/* Tab Content Area */}
-        <div className="max-w-7xl mx-auto px-4 mt-6">
-          {activeTab === 'dashboard' && (
-            <DashboardOverview
-              currentUser={currentUser}
-              cases={cases}
-              consultations={consultations}
-              documents={documents}
-              lawyers={lawyers}
-              transactions={transactions}
+        {/* 1. SUB-MENUS: Horizontal Scrollable Row of Pills/Chips */}
+        <div className="px-4 pt-2.5 pb-1 border-b border-slate-800/60 bg-[#0B1120]/60 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 min-w-max">
+            {[
+              { id: 'all', title: 'همه', action: () => setActiveSubMenuPill('همه') },
+              { id: 'services', title: 'خدمات حقوقی', action: () => { setActiveSubMenuPill('خدمات حقوقی'); setIsTriageOpen(true); } },
+              { id: 'lawyers', title: 'بانک وکلا', action: () => { setActiveSubMenuPill('بانک وکلا'); setIsLawyersDirectoryOpen(true); } },
+              { id: 'cases', title: 'پیگیری دادرسی', action: () => { setActiveSubMenuPill('پیگیری دادرسی'); setIsCaseDetailsOpen(true); } },
+              { id: 'laws', title: 'بانک قوانین', action: () => { setActiveSubMenuPill('بانک قوانین'); setIsQnAOpen(true); } },
+              { id: 'consult', title: 'مشاوره آنلاین', action: () => { setActiveSubMenuPill('مشاوره آنلاین'); setIsEncryptedConsultationOpen(true); } },
+            ].map((pill) => (
+              <button
+                key={pill.id}
+                onClick={pill.action}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  activeSubMenuPill === pill.title
+                    ? 'bg-[#F59E0B] text-slate-950 shadow-md shadow-amber-500/20 font-bold'
+                    : 'bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800'
+                }`}
+              >
+                {pill.title}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Dynamic Tab Body */}
+        {activeNavTab === 'home' && (
+          <div className="flex-1 flex flex-col pb-44 overflow-y-auto no-scrollbar space-y-4 p-4 text-right">
+            
+            {/* 2. HORIZONTAL BANNER (Swipeable Carousel) */}
+            <MobileAnnouncementBanner
               onOpenTriage={() => setIsTriageOpen(true)}
-              onNavigateTab={(tab) => setActiveTab(tab)}
-              onJoinMeeting={(roomId) => setActiveTab('consultations')}
-            />
-          )}
-
-          {activeTab === 'lawyers' && (
-            <LawyerDirectory
-              lawyers={lawyers}
-              onSelectLawyerForProfile={(lawyer) => setSelectedLawyerForProfile(lawyer)}
-              onSelectLawyerForBooking={(lawyerId) => {
-                const target = lawyers.find((l) => l.id === lawyerId) || null;
-                setSelectedLawyerForBooking(target);
+              onOpenQuickCall={() => {
+                const onlineLawyer = lawyers.find((l) => l.isOnline) || lawyers[0];
+                setSelectedLawyerForBooking(onlineLawyer);
               }}
-              onStartChatWithLawyer={(lawyerId) => {
-                setActiveCallLawyerId(lawyerId);
-                setAutoStartCall(false);
-                setActiveTab('consultations');
-              }}
-              onQuickCall={(lawyerId) => {
-                setActiveCallLawyerId(lawyerId);
-                setAutoStartCall(true);
-                setActiveTab('consultations');
-              }}
-              initialQuery={lawyerDirectoryQuery}
+              onOpenSana={() => setIsAblaghiehOpen(true)}
             />
-          )}
 
-          {activeTab === 'cases' && (
-            <CaseTrackingView
-              cases={cases}
-              documents={documents}
-              onUploadDocument={(caseId) => setActiveTab('documents')}
-              currentUserRole={currentUser.role}
+            {/* 3. SERVICES GRID (3-Column Grid Layout) */}
+            <MobileServicesGrid
+              features={appFeatures}
+              onSelectService={handleSelectService}
             />
-          )}
 
-          {activeTab === 'consultations' && (
-            <EncryptedChatAndVideo
-              currentUser={currentUser}
-              lawyers={lawyers}
-              initialLawyerId={activeCallLawyerId}
-              autoStartCall={autoStartCall}
-            />
-          )}
-
-          {activeTab === 'calendar' && (
-            <SmartCalendarView
-              events={calendarEvents}
-              cases={cases}
-              onAddEvent={handleAddCalendarEvent}
-              onToggleComplete={handleToggleCalendarEvent}
-              currentUserRole={currentUser.role}
-            />
-          )}
-
-          {activeTab === 'documents' && (
-            <DocumentVaultView
-              documents={documents}
-              cases={cases}
-              onUploadDocument={handleUploadDocument}
-              currentUserRole={currentUser.role}
-            />
-          )}
-
-          {activeTab === 'qna' && (
-            <LegalQnAView
-              qnaList={qnaList}
-              onAskQuestion={handleAskQuestion}
-              onAddAnswer={handleAddAnswer}
-              currentUserRole={currentUser.role}
-              currentUserName={currentUser.name}
-            />
-          )}
-
-          {activeTab === 'sms' && (
-            <SMSNotificationsView
-              logs={smsLogs}
-              onSendCustomSMS={handleSendCustomSMS}
-              userPhone={currentUser.phone}
-            />
-          )}
-
-          {activeTab === 'financial' && (
-            <LawyerFinancialDashboard
-              lawyer={lawyers[0]}
-              transactions={transactions}
-              onWithdrawRequest={handleWithdrawRequest}
-            />
-          )}
-
-          {(activeTab === 'master-admin' || activeTab === 'admin-verifications') && (
-            <MasterAdminManagementPanel
-              lawyers={lawyers}
-              onApproveLawyer={handleApproveLawyer}
-              onRejectLawyer={handleRejectLawyer}
-              onUpdateLawyer={handleUpdateLawyer}
-              onDeleteLawyer={handleDeleteLawyer}
-              commissionSettings={commissionSettings}
-              onUpdateCommissionSettings={handleUpdateCommissionSettings}
-              pages={pages}
-              onCreatePage={handleCreatePage}
-              onUpdatePage={handleUpdatePage}
-              onDeletePage={handleDeletePage}
-              onViewPagePreview={(page) => setSelectedPageForModal(page)}
-              menus={menus}
-              onUpdateMenus={handleUpdateMenus}
-              assistants={assistants}
-              onAddAssistant={handleAddAssistant}
-              onUpdateAssistant={handleUpdateAssistant}
-              onDeleteAssistant={handleDeleteAssistant}
-              activeAssistant={activeAssistant}
-              onSelectActiveAssistant={(ast) => setActiveAssistant(ast)}
-              cms={cms}
-              onUpdateCMS={(newCMS) => setCms(newCMS)}
-            />
-          )}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-950 border-t border-slate-800 text-xs text-slate-400 py-10 px-4">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Col 1: Identity & Mission */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
-                  <Scale className="w-5 h-5 text-amber-400" />
+            {/* 2. HERO CARD: Current Active Case Card (Glassmorphism + Floating Gold Chip) */}
+            <section className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-teal-400 rounded-full" />
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-100">پرونده فعال جاری (سامانه ثنا)</h3>
                 </div>
-                <span className="text-base font-black text-white">{cms.brandName || 'دادگستر'}</span>
+                <button
+                  onClick={() => setIsCaseDetailsOpen(true)}
+                  className="text-[11px] text-[#F59E0B] font-semibold flex items-center gap-0.5 hover:underline cursor-pointer"
+                >
+                  <span>جزییات کامل</span>
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <p className="text-slate-400 leading-relaxed text-[11px]">
-                {cms.footerMissionText || 'پلتفرم تخصصی وکالت برخط، تریاژ هوشمند پرونده، مشاوره تصویری امن و پیگیری یکپارچه دادرسی الکترونیک در سراسر کشور.'}
-              </p>
-              <div className="pt-2 flex flex-col gap-1.5 text-[10px]">
-                {cms.footerSecurityBadge1 && (
-                  <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                    {cms.footerSecurityBadge1}
+
+              <div
+                onClick={() => setIsCaseDetailsOpen(true)}
+                className="p-4 rounded-2xl bg-gradient-to-br from-slate-900/90 via-[#0e172a]/70 to-[#0B1120]/90 border border-slate-800 hover:border-teal-500/30 transition-all cursor-pointer shadow-lg space-y-2.5 group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="bg-[#F59E0B] text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-sm font-mono tabular-nums">
+                    پرونده: ۱۴۰۳-۹۸۲۱
                   </span>
-                )}
-                {cms.footerSecurityBadge2 && (
-                  <span className="flex items-center gap-1.5 text-cyan-400 font-medium">
-                    <Server className="w-3.5 h-3.5 shrink-0" />
-                    {cms.footerSecurityBadge2}
+                  <span className="text-[11px] font-semibold text-teal-300 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                    {currentCase?.status || 'در حال رسیدگی'}
                   </span>
-                )}
+                </div>
+
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1 flex-1">
+                    <h4 className="text-xs font-bold text-slate-100 group-hover:text-amber-300 transition-colors leading-snug">
+                      {currentCase?.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-400">{currentCase?.courtBranch}</p>
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20 flex items-center justify-center text-[#F59E0B] shrink-0">
+                    <Gavel className="w-4 h-4" />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                  <span>موعد جلسه بعدی دادرسی:</span>
+                  <span className="text-amber-300 font-semibold">دوشنبه ۱۴ آبان · ساعت ۱۰:۳۰</span>
+                </div>
               </div>
-            </div>
+            </section>
 
-            {/* Col 2: Services Links */}
-            <div>
-              <h4 className="text-slate-200 font-bold mb-2">خدمات و بخش‌ها:</h4>
-              <ul className="space-y-1.5 text-[11px] text-slate-400">
-                {(cms.customLinks?.filter(l => l.isActive && l.category === 'footer-services') || []).map((link) => (
-                  <li
-                    key={link.id}
-                    onClick={() => handleCustomLinkClick(link)}
-                    className="hover:text-amber-400 cursor-pointer flex items-center gap-1.5 transition-colors"
-                  >
-                    <span>{link.title}</span>
-                    {link.badge && (
-                      <span className="text-[9px] bg-slate-800 text-amber-300 border border-slate-700 px-1 rounded">
-                        {link.badge}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* 3. TIMELINE (Case Steps) - Minimal Thin Lines and Small Icons */}
+            <section className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-4 bg-[#F59E0B] rounded-full" />
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-100">مراحل دادرسی پرونده</h3>
+                </div>
+                <span className="text-[10px] text-amber-400/90 font-mono">شعبه ۱۰۵ حقوقی</span>
+              </div>
 
-            {/* Col 3: Judicial Portals & Authorities */}
-            <div>
-              <h4 className="text-slate-200 font-bold mb-2">سامانه‌ها و مراجع قضایی:</h4>
-              <ul className="space-y-1.5 text-[11px] text-slate-400">
-                {(cms.customLinks?.filter(l => l.isActive && l.category === 'footer-judicial') || []).map((link) => (
-                  <li
-                    key={link.id}
-                    onClick={() => handleCustomLinkClick(link)}
-                    className="hover:text-cyan-400 cursor-pointer flex items-center gap-1.5 transition-colors"
-                  >
-                    <span>{link.title}</span>
-                    {link.isExternal && <ExternalLink className="w-2.5 h-2.5 text-slate-500" />}
-                    {link.badge && (
-                      <span className="text-[9px] bg-slate-800 text-cyan-300 border border-slate-700 px-1 rounded">
-                        {link.badge}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <div className="relative pr-2 space-y-3">
+                {/* Step 1: ثبت دادخواست (completed green check) */}
+                <div className="flex items-start gap-3 relative">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center shrink-0 z-10 text-emerald-400">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <div className="flex-1 -mt-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200">ثبت دادخواست و پرداخت هزینه دادرسی</span>
+                      <span className="text-[10px] text-slate-500">۱۵ مهر</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">دادخواست از طریق سامانه خدمات قضایی ثبت شد.</p>
+                  </div>
+                </div>
 
-            {/* Col 4: Quick Laws & 24/7 Support */}
-            <div className="space-y-2.5">
-              <h4 className="text-slate-200 font-bold">پشتیبانی و قوانین:</h4>
-              <ul className="space-y-1 text-[11px] text-slate-400 pb-1">
-                {(cms.customLinks?.filter(l => l.isActive && l.category === 'footer-quick') || []).map((link) => (
-                  <li
-                    key={link.id}
-                    onClick={() => handleCustomLinkClick(link)}
-                    className="hover:text-amber-400 cursor-pointer flex items-center gap-1.5 transition-colors"
-                  >
-                    <span>• {link.title}</span>
-                  </li>
-                ))}
-              </ul>
-              {cms.contactEmergencyPhone && (
-                <p className="text-[11px] text-slate-300 leading-relaxed font-semibold">
-                  {cms.contactEmergencyLabel ? `${cms.contactEmergencyLabel}: ` : ''}{cms.contactEmergencyPhone}
-                </p>
-              )}
-              {cms.consultationGuaranteeText && (
-                <p className="text-[10px] text-amber-400/90 leading-relaxed bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                  {cms.consultationGuaranteeText}
-                </p>
-              )}
-            </div>
+                {/* Thin connecting line */}
+                <div className="absolute right-[11px] top-4 w-0.5 h-8 bg-emerald-500/30 -z-0" />
+
+                {/* Step 2: توزیع به شعبه (completed green check) */}
+                <div className="flex items-start gap-3 relative">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center shrink-0 z-10 text-emerald-400">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <div className="flex-1 -mt-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200">توزیع به شعبه ۱۰۵ حقوقی</span>
+                      <span className="text-[10px] text-slate-500">۲۰ مهر</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">پرونده به ریاست شعبه ارجاع گردید.</p>
+                  </div>
+                </div>
+
+                {/* Thin connecting line */}
+                <div className="absolute right-[11px] top-[54px] w-0.5 h-8 bg-amber-500/40 -z-0" />
+
+                {/* Step 3: ارجاع به کارشناس (yellow circle in-progress) */}
+                <div className="flex items-start gap-3 relative">
+                  <div className="w-5 h-5 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center shrink-0 z-10">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  </div>
+                  <div className="flex-1 -mt-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-300">ارجاع به کارشناس رسمی دادگستری</span>
+                      <span className="text-[10px] bg-amber-500/10 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/20 font-bold">در حال اقدام</span>
+                    </div>
+                    <p className="text-[10px] text-slate-300 mt-0.5">کارشناس منتخب در حال تهیه نظریه کارشناسی ملکی است.</p>
+                  </div>
+                </div>
+
+                {/* Thin connecting line */}
+                <div className="absolute right-[11px] top-[102px] w-0.5 h-8 bg-slate-800 -z-0" />
+
+                {/* Step 4: رسیدگی در شعبه (pending gray circle) */}
+                <div className="flex items-start gap-3 relative">
+                  <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0 z-10 text-slate-500">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                  </div>
+                  <div className="flex-1 -mt-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-400">رسیدگی در شعبه و صدور رای</span>
+                      <span className="text-[10px] text-slate-600">موعد: ۱۴ آبان</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-0.5">جلسه دادرسی در وقت مقرر برگزار خواهد شد.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
           </div>
+        )}
 
-          <div className="pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-500">
-            <span>{cms.footerCopyrightText || '© کلیه حقوق مادی و معنوی برای سامانه جامع دادگستر محفوظ است.'}</span>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsArchitectureOpen(true)}
-                className="hover:text-cyan-400 transition-colors cursor-pointer"
-              >
-                مشخصات فنی و معماری سرور (جنگو + پستگرس)
-              </button>
-              <span>•</span>
-              <button
-                onClick={() => setIsCMSOpen(true)}
-                className="hover:text-amber-400 transition-colors cursor-pointer"
-              >
-                مدیریت محتوای سایت (CMS)
-              </button>
-            </div>
+        {/* 'پرونده‌ها' (Cases) Tab View */}
+        {activeNavTab === 'cases' && (
+          <div className="flex-1 p-4 pb-44 overflow-y-auto no-scrollbar">
+            <MobileFilesView
+              cases={cases}
+              onSelectCase={(c) => setIsCaseDetailsOpen(true)}
+              onOpenNewCaseTriage={() => setIsTriageOpen(true)}
+            />
+          </div>
+        )}
+
+        {/* 'کیف پول' (Wallet) Tab View */}
+        {activeNavTab === 'wallet' && (
+          <div className="flex-1 p-4 pb-44 overflow-y-auto no-scrollbar">
+            <MobileBankView
+              user={currentUser}
+              transactions={transactions}
+              onChargeWallet={handleChargeWallet}
+            />
+          </div>
+        )}
+
+        {/* 'پروفایل' (Profile) Tab View */}
+        {activeNavTab === 'profile' && (
+          <div className="flex-1 p-4 pb-44 overflow-y-auto no-scrollbar">
+            <MobileProfileView
+              user={currentUser}
+              allUsers={allUsers}
+              onSwitchUser={(id) => {
+                const found = allUsers.find((u) => u.id === id);
+                if (found) setCurrentUser(found);
+              }}
+              onOpenArchitecture={() => setIsArchitectureOpen(true)}
+              onOpenCMS={() => setIsAdminCMSOpen(true)}
+              onOpenAuth={() => setIsAuthOpen(true)}
+            />
+          </div>
+        )}
+
+        {/* 4. BOTTOM NAV & ACTIONS (Thumb Zone) */}
+        {/* Horizontal scrollable secondary tools row */}
+        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-30 px-3 pointer-events-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pointer-events-auto py-1">
+            <button
+              onClick={() => setIsDocumentsVaultOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 hover:text-white hover:border-slate-700 whitespace-nowrap flex items-center gap-1 shadow-lg backdrop-blur-md cursor-pointer"
+            >
+              <FileText className="w-3 h-3 text-teal-400" />
+              <span>اسناد و مدارک</span>
+            </button>
+            <button
+              onClick={() => setIsTriageOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 hover:text-white hover:border-slate-700 whitespace-nowrap flex items-center gap-1 shadow-lg backdrop-blur-md cursor-pointer"
+            >
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>تریاژ هوشمند</span>
+            </button>
+            <button
+              onClick={() => setIsEncryptedConsultationOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 hover:text-white hover:border-slate-700 whitespace-nowrap flex items-center gap-1 shadow-lg backdrop-blur-md cursor-pointer"
+            >
+              <Lock className="w-3 h-3 text-cyan-400" />
+              <span>مشاوره رمزنگاری</span>
+            </button>
+            <button
+              onClick={() => setIsQnAOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 hover:text-white hover:border-slate-700 whitespace-nowrap flex items-center gap-1 shadow-lg backdrop-blur-md cursor-pointer"
+            >
+              <BookOpen className="w-3 h-3 text-indigo-400" />
+              <span>بانک قوانین</span>
+            </button>
           </div>
         </div>
-      </footer>
 
-      {/* Modals */}
-      <AITriageModal
-        isOpen={isTriageOpen}
-        onClose={() => setIsTriageOpen(false)}
-        onSelectLawyerForBooking={(lawyerId) => {
-          const target = lawyers.find((l) => l.id === lawyerId) || null;
-          setSelectedLawyerForBooking(target);
-        }}
+        {/* Two prominent floating action buttons side-by-side just above bottom bar */}
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-30 px-3 pointer-events-none">
+          <div className="grid grid-cols-2 gap-2 pointer-events-auto">
+            {/* Solid Gold Button: 'مشاهده پرونده' */}
+            <button
+              onClick={() => setIsCaseDetailsOpen(true)}
+              className="py-2.5 px-3 rounded-2xl bg-[#F59E0B] hover:bg-[#d97706] text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-xl shadow-amber-500/25 transition-all cursor-pointer active:scale-[0.98]"
+            >
+              <Briefcase className="w-4 h-4 stroke-[2.5]" />
+              <span>مشاهده پرونده</span>
+            </button>
+
+            {/* Dark Glass Button: 'ابلاغیه‌ها' */}
+            <button
+              onClick={() => setIsAblaghiehOpen(true)}
+              className="py-2.5 px-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 shadow-xl backdrop-blur-xl transition-all cursor-pointer active:scale-[0.98] relative"
+            >
+              <Bell className="w-4 h-4 text-amber-400" />
+              <span>ابلاغیه‌ها</span>
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute top-2 right-3" />
+              <span className="w-2 h-2 rounded-full bg-amber-400 absolute top-2 right-3" />
+            </button>
+          </div>
+        </div>
+
+        {/* 4. BOTTOM NAVIGATION BAR (Home, Cases, Wallet, Profile) */}
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 px-3 pb-3 pt-1 pointer-events-none">
+          <nav className="h-16 bg-[#0F172A]/95 backdrop-blur-2xl border border-slate-800/80 rounded-2xl grid grid-cols-4 items-center px-1 shadow-2xl pointer-events-auto">
+            {/* 1. خانه (Home) */}
+            <button
+              onClick={() => setActiveNavTab('home')}
+              className={`flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
+                activeNavTab === 'home' ? 'text-[#F59E0B]' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Home className="w-5 h-5" />
+              <span className="text-[10px] mt-1 font-medium">خانه</span>
+            </button>
+
+            {/* 2. پرونده‌ها (Cases) */}
+            <button
+              onClick={() => setActiveNavTab('cases')}
+              className={`flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
+                activeNavTab === 'cases' ? 'text-teal-400' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Briefcase className="w-5 h-5" />
+              <span className="text-[10px] mt-1 font-medium">پرونده‌ها</span>
+            </button>
+
+            {/* 3. کیف پول (Wallet) */}
+            <button
+              onClick={() => setActiveNavTab('wallet')}
+              className={`flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
+                activeNavTab === 'wallet' ? 'text-[#F59E0B]' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Landmark className="w-5 h-5" />
+              <span className="text-[10px] mt-1 font-medium">کیف پول</span>
+            </button>
+
+            {/* 4. پروفایل (Profile) */}
+            <button
+              onClick={() => setActiveNavTab('profile')}
+              className={`flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
+                activeNavTab === 'profile' ? 'text-cyan-400' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <User className="w-5 h-5" />
+              <span className="text-[10px] mt-1 font-medium">پروفایل</span>
+            </button>
+          </nav>
+        </div>
+
+      </div>
+
+      {/* Side Drawer Menu (Slides from right) */}
+      <MobileSideDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        user={currentUser}
+        onOpenTransactions={() => setActiveNavTab('wallet')}
+        onOpenInbox={() => setIsAblaghiehOpen(true)}
+        onOpenSettings={() => setIsAdminCMSOpen(true)}
+        onOpenAbout={() => setIsArchitectureOpen(true)}
+        onOpenAuth={() => setIsAuthOpen(true)}
+        unreadCount={2}
+      />
+
+      {/* Admin Panel (CMS) Modal */}
+      <AdminCMSModal
+        isOpen={isAdminCMSOpen}
+        onClose={() => setIsAdminCMSOpen(false)}
         lawyers={lawyers}
+        onApproveLawyer={handleApproveLawyer}
+        onRejectLawyer={handleRejectLawyer}
+        appFeatures={appFeatures}
+        onToggleFeatureVisibility={handleToggleFeatureVisibility}
+        onUpdateFeatureTitle={handleUpdateFeatureTitle}
       />
 
-      <LawyerProfileModal
-        lawyer={selectedLawyerForProfile}
-        onClose={() => setSelectedLawyerForProfile(null)}
-        onBookConsultation={(lawyerId, serviceType) => {
-          setSelectedLawyerForProfile(null);
-          const target = lawyers.find((l) => l.id === lawyerId) || null;
-          if (serviceType) setBookingServiceType(serviceType);
-          setSelectedLawyerForBooking(target);
+      {/* Full Case Details Bottom Sheet */}
+      <MobileCaseDetailsSheet
+        isOpen={isCaseDetailsOpen}
+        onClose={() => setIsCaseDetailsOpen(false)}
+        legalCase={currentCase}
+        lawyer={assignedLawyer}
+        onQuickCallLawyer={(id) => {
+          setIsCaseDetailsOpen(false);
+          setIsLawyersDirectoryOpen(true);
         }}
-        onStartChat={(lawyerId) => {
-          setSelectedLawyerForProfile(null);
-          setActiveTab('consultations');
+        onViewDocuments={() => {
+          setIsCaseDetailsOpen(false);
+          setIsDocumentsVaultOpen(true);
         }}
-        onAddReview={handleAddReview}
-        currentUserRole={currentUser.role}
       />
 
-      <BookingAndPaymentModal
-        isOpen={Boolean(selectedLawyerForBooking)}
-        onClose={() => setSelectedLawyerForBooking(null)}
-        lawyer={selectedLawyerForBooking}
-        initialServiceType={bookingServiceType}
-        onPaymentSuccess={handlePaymentSuccess}
-        clientName={currentUser.name}
-        clientPhone={currentUser.phone}
+      {/* Ablaghieh / Notifications Bottom Sheet */}
+      <MobileAblaghiehSheet
+        isOpen={isAblaghiehOpen}
+        onClose={() => setIsAblaghiehOpen(false)}
       />
 
-      <CMSManagerModal
-        isOpen={isCMSOpen}
-        onClose={() => setIsCMSOpen(false)}
-        cms={cms}
-        onSaveCMS={(newCMS) => setCms(newCMS)}
-      />
-
-      <ArchitectureModal
-        isOpen={isArchitectureOpen}
-        onClose={() => setIsArchitectureOpen(false)}
-      />
-
+      {/* Auth Modal with Valid Links */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
@@ -797,14 +690,220 @@ export default function App() {
           setLawyers((prev) => [newLawyer, ...prev]);
         }}
         onLoginSuccess={(userId) => {
-          handleSwitchUser(userId);
+          const found = allUsers.find((u) => u.id === userId);
+          if (found) setCurrentUser(found);
         }}
       />
 
-      <DynamicPageModal
-        page={selectedPageForModal}
-        onClose={() => setSelectedPageForModal(null)}
+      {/* AI Triage Modal */}
+      <AITriageModal
+        isOpen={isTriageOpen}
+        onClose={() => setIsTriageOpen(false)}
+        lawyers={lawyers}
+        onSelectLawyerForBooking={(lawyerId) => {
+          setIsTriageOpen(false);
+          const target = lawyers.find((l) => l.id === lawyerId) || null;
+          setSelectedLawyerForBooking(target);
+        }}
       />
+
+      {/* Lawyers Directory Modal */}
+      {isLawyersDirectoryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg max-h-[90vh] bg-[#0B1120] border border-slate-800 rounded-3xl overflow-y-auto p-4 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-slate-100">بانک وکلای متخصص دادگستر</h3>
+              <button
+                onClick={() => setIsLawyersDirectoryOpen(false)}
+                className="text-xs text-slate-400 hover:text-slate-200"
+              >
+                بستن
+              </button>
+            </div>
+            <LawyerDirectory
+              lawyers={lawyers}
+              onSelectLawyerForProfile={(lawyer) => {
+                setSelectedLawyerForProfile(lawyer);
+              }}
+              onSelectLawyerForBooking={(lawyerId) => {
+                const target = lawyers.find((l) => l.id === lawyerId) || null;
+                setSelectedLawyerForBooking(target);
+              }}
+              onStartChatWithLawyer={(lawyerId) => {
+                setIsLawyersDirectoryOpen(false);
+                setIsEncryptedConsultationOpen(true);
+              }}
+              onQuickCall={(lawyerId) => {
+                setIsLawyersDirectoryOpen(false);
+                const target = lawyers.find((l) => l.id === lawyerId) || null;
+                setSelectedLawyerForBooking(target);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Lawyer Profile Modal */}
+      <LawyerProfileModal
+        lawyer={selectedLawyerForProfile}
+        onClose={() => setSelectedLawyerForProfile(null)}
+        onBookConsultation={(lawyerId) => {
+          setSelectedLawyerForProfile(null);
+          const target = lawyers.find((l) => l.id === lawyerId) || null;
+          setSelectedLawyerForBooking(target);
+        }}
+        onStartChat={() => {
+          setSelectedLawyerForProfile(null);
+          setIsEncryptedConsultationOpen(true);
+        }}
+        onAddReview={(lawyerId, review) => {
+          setLawyers((prev) =>
+            prev.map((l) => (l.id === lawyerId ? { ...l, reviewCount: l.reviewCount + 1 } : l))
+          );
+        }}
+        currentUserRole={currentUser.role}
+      />
+
+      {/* Booking & Payment Modal */}
+      <BookingAndPaymentModal
+        isOpen={Boolean(selectedLawyerForBooking)}
+        onClose={() => setSelectedLawyerForBooking(null)}
+        lawyer={selectedLawyerForBooking}
+        initialServiceType="مشاوره تلفنی ۳۰ دقیقه"
+        onPaymentSuccess={handlePaymentSuccess}
+        clientName={currentUser.name}
+        clientPhone={currentUser.phone}
+      />
+
+      {/* Document Vault Modal */}
+      {isDocumentsVaultOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg max-h-[90vh] bg-[#0B1120] border border-slate-800 rounded-3xl overflow-y-auto p-4 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-slate-100">اسناد، مدارک و تنظیم دادخواست</h3>
+              <button
+                onClick={() => setIsDocumentsVaultOpen(false)}
+                className="text-xs text-slate-400 hover:text-slate-200"
+              >
+                بستن
+              </button>
+            </div>
+            <DocumentVaultView
+              documents={documents}
+              cases={cases}
+              onUploadDocument={(doc) => {
+                const newDoc: CaseDocument = {
+                  id: `doc-${Date.now()}`,
+                  uploadDate: new Date().toLocaleDateString('fa-IR'),
+                  ...doc,
+                };
+                setDocuments((prev) => [newDoc, ...prev]);
+              }}
+              currentUserRole={currentUser.role}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Legal Q&A Modal */}
+      {isQnAOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg max-h-[90vh] bg-[#0B1120] border border-slate-800 rounded-3xl overflow-y-auto p-4 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-slate-100">بانک قوانین و پرسش و پاسخ قضایی</h3>
+              <button
+                onClick={() => setIsQnAOpen(false)}
+                className="text-xs text-slate-400 hover:text-slate-200"
+              >
+                بستن
+              </button>
+            </div>
+            <LegalQnAView
+              qnaList={qnaList}
+              onAskQuestion={(item) => {
+                const newItem: LegalQnAItem = {
+                  id: `qna-${Date.now()}`,
+                  views: 1,
+                  answers: [],
+                  ...item,
+                };
+                setQnaList((prev) => [newItem, ...prev]);
+              }}
+              onAddAnswer={(qId, text, articles) => {
+                setQnaList((prev) =>
+                  prev.map((q) =>
+                    q.id === qId
+                      ? {
+                          ...q,
+                          answers: [
+                            ...q.answers,
+                            {
+                              id: `ans-${Date.now()}`,
+                              lawyerId: currentUser.id,
+                              lawyerName: currentUser.name,
+                              lawyerAvatar: currentUser.avatar,
+                              lawyerTitle: 'وکیل دادگستری',
+                              answer: text,
+                              date: new Date().toLocaleDateString('fa-IR'),
+                              upvotes: 0,
+                              isVerifiedBest: true,
+                              relevantArticles: articles,
+                            },
+                          ],
+                        }
+                      : q
+                  )
+                );
+              }}
+              currentUserRole={currentUser.role}
+              currentUserName={currentUser.name}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Architecture & Django Backend Modal */}
+      <ArchitectureModal
+        isOpen={isArchitectureOpen}
+        onClose={() => setIsArchitectureOpen(false)}
+      />
+
+      {/* Encrypted Consultation & Secure Chat Modal (PART 2 Integration) */}
+      {isEncryptedConsultationOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in text-right">
+          <div className="relative w-full max-w-lg bg-[#0B1120] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 bg-slate-950/90 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                    <span>جلسه مشاوره امن و چت رمزنگاری‌شده (AES-256)</span>
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    رمزنگاری در حالت سکون (At Rest) بر اساس مدل‌های جنگو
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEncryptedConsultationOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <EncryptedChatAndVideo
+                currentUser={currentUser}
+                lawyers={lawyers}
+                initialLawyerId={assignedLawyer.id}
+                autoStartCall={false}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

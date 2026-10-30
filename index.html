@@ -3,17 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      /* Suppress benign Vite HMR WebSocket connection errors in sandbox/preview environments */
+      (function() {
+        var isViteHmrError = function(msg, src) {
+          var str = (msg || '') + ' ' + (src || '');
+          return str.includes('@vite/client') ||
+                 str.includes('WebSocket') ||
+                 str.includes('createWebSocketModuleRunnerTransport') ||
+                 str.includes('failed to connect to websocket');
+        };
+
+        window.addEventListener('error', function(e) {
+          if (isViteHmrError(e.message, e.filename) || isViteHmrError(e.error && e.error.stack, '')) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          var reason = e.reason;
+          var msg = (reason && (reason.message || reason.stack || String(reason))) || '';
+          if (isViteHmrError(msg, '')) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
     <title>سامانه هوشمند حقوقی دادگستر | پلتفرم وکالت و تریاژ پرونده</title>
     <meta name="description" content="پلتفرم جامع خدمات حقوقی و وکالت آنلاین، تریاژ هوشمند پرونده با هوش مصنوعی، چت و مشاوره تصویری امن، پیگیری پرونده، تقویم جلسات دادگاه و داشبورد مالی وکلا" />
     <meta property="og:title" content="سامانه هوشمند حقوقی دادگستر | پلتفرم وکالت و تریاژ پرونده" />
     <meta property="og:description" content="پلتفرم جامع خدمات حقوقی و وکالت آنلاین، تریاژ هوشمند پرونده با هوش مصنوعی، چت و مشاوره تصویری امن، پیگیری پرونده، تقویم جلسات دادگاه و داشبورد مالی وکلا" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0B1120" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-amber-500/30 selection:text-amber-200">
+  <body class="bg-[#0B1120] text-slate-100 font-sans antialiased selection:bg-[#F59E0B]/30 selection:text-[#F59E0B] overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
