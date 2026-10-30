@@ -1,11 +1,13 @@
-import {createRoot} from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { CMSProvider } from './context/CMSContext.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
-    <App />
+    <CMSProvider>
+      <App />
+    </CMSProvider>
   </ErrorBoundary>
 );
-

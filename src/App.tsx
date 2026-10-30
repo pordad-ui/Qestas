@@ -1,29 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Menu,
   Bell,
-  Home,
   Briefcase,
-  Landmark,
-  User,
   Gavel,
   Check,
-  Calendar,
-  Sparkles,
-  Phone,
-  FileText,
-  CreditCard,
   Sliders,
-  LogIn,
   ChevronLeft,
   Lock,
-  BookOpen,
+  X,
 } from 'lucide-react';
 
 import { MobileStatusBar } from './components/MobileStatusBar';
 import { MobileSideDrawer } from './components/MobileSideDrawer';
 import { MobileAnnouncementBanner } from './components/MobileAnnouncementBanner';
-import { MobileServicesGrid, AppFeatureItem, DEFAULT_APP_FEATURES } from './components/MobileServicesGrid';
+import { MobileServicesGrid } from './components/MobileServicesGrid';
 import { MobileCaseDetailsSheet } from './components/MobileCaseDetailsSheet';
 import { MobileAblaghiehSheet } from './components/MobileAblaghiehSheet';
 import { MobileFilesView } from './components/MobileFilesView';
@@ -32,6 +23,8 @@ import { MobileProfileView } from './components/MobileProfileView';
 import { LegalScalesLogo } from './components/LegalScalesLogo';
 import { AdminCMSModal } from './components/AdminCMSModal';
 import { EncryptedChatAndVideo } from './components/EncryptedChatAndVideo';
+import { DynamicIcon } from './components/DynamicIcon';
+import { useCMS } from './context/CMSContext';
 
 // Existing functional modals
 import { AuthModal } from './components/AuthModal';
@@ -69,32 +62,19 @@ import {
 } from './types/legal';
 
 export default function App() {
+  const { t, getMenusByLocation } = useCMS();
+
   // Global Data State
   const [allUsers, setAllUsers] = useState<UserType[]>(INITIAL_USERS);
   const [currentUser, setCurrentUser] = useState<UserType>(INITIAL_USERS[0]);
   const [lawyers, setLawyers] = useState<Lawyer[]>(INITIAL_LAWYERS);
-  const [cases, setCases] = useState<LegalCase[]>(INITIAL_CASES);
+  const [cases] = useState<LegalCase[]>(INITIAL_CASES);
   const [documents, setDocuments] = useState<CaseDocument[]>(INITIAL_DOCUMENTS);
   const [consultations, setConsultations] = useState<ConsultationSession[]>(INITIAL_CONSULTATIONS);
   const [transactions, setTransactions] = useState<PaymentTransaction[]>(INITIAL_TRANSACTIONS);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(INITIAL_CALENDAR_EVENTS);
   const [smsLogs, setSmsLogs] = useState<SMSNotificationLog[]>(INITIAL_SMS_LOGS);
   const [qnaList, setQnaList] = useState<LegalQnAItem[]>(INITIAL_QNA);
-
-  // AppFeature CMS State (Soft Delete / Hide Toggle)
-  const [appFeatures, setAppFeatures] = useState<AppFeatureItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('dadgostar_app_features_v3');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return DEFAULT_APP_FEATURES;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('dadgostar_app_features_v3', JSON.stringify(appFeatures));
-    } catch {}
-  }, [appFeatures]);
 
   // Active Bottom Navigation Tab: 'home' | 'cases' | 'wallet' | 'profile'
   const [activeNavTab, setActiveNavTab] = useState<'home' | 'cases' | 'wallet' | 'profile'>('home');
@@ -128,6 +108,45 @@ export default function App() {
   const currentCase = cases[0];
   const assignedLawyer = lawyers.find((l) => l.id === currentCase?.lawyerId) || lawyers[0];
 
+  // Dynamic Routing Handler for all CMS-managed links and menus
+  const handleNavigate = (targetUrl: string) => {
+    if (!targetUrl) return;
+
+    if (targetUrl === '#cases' || targetUrl === 'case-tracking' || targetUrl.includes('case')) {
+      setIsCaseDetailsOpen(true);
+    } else if (targetUrl === '#lawyers' || targetUrl === 'lawyer-bank' || targetUrl.includes('lawyer')) {
+      setIsLawyersDirectoryOpen(true);
+    } else if (targetUrl === '#consultation' || targetUrl === '#chat' || targetUrl === 'online-consultation') {
+      setIsEncryptedConsultationOpen(true);
+    } else if (targetUrl === '#triage' || targetUrl === 'legal-services') {
+      setIsTriageOpen(true);
+    } else if (targetUrl === '#documents' || targetUrl === 'drafting') {
+      setIsDocumentsVaultOpen(true);
+    } else if (targetUrl === '#calendar') {
+      setIsCalendarOpen(true);
+    } else if (targetUrl === '#qna' || targetUrl === '#laws' || targetUrl === 'law-database') {
+      setIsQnAOpen(true);
+    } else if (targetUrl === '#wallet' || targetUrl === '#transactions') {
+      setActiveNavTab('wallet');
+    } else if (targetUrl === '#profile') {
+      setActiveNavTab('profile');
+    } else if (targetUrl === '#home' || targetUrl === '#all') {
+      setActiveNavTab('home');
+    } else if (targetUrl === '#cms' || targetUrl === '#admin' || targetUrl === '#settings') {
+      setIsAdminCMSOpen(true);
+    } else if (targetUrl === '#ablaghieh' || targetUrl === '#inbox') {
+      setIsAblaghiehOpen(true);
+    } else if (targetUrl === '#about') {
+      setIsArchitectureOpen(true);
+    } else if (targetUrl === '#auth') {
+      setIsAuthOpen(true);
+    } else if (targetUrl.startsWith('http')) {
+      showToast(`هدایت به سامانه رسمی: ${targetUrl}`);
+    } else {
+      showToast(`درخواست مسیر: ${targetUrl}`);
+    }
+  };
+
   // Lawyer Approval Handler (Admin CMS)
   const handleApproveLawyer = (lawyerId: string) => {
     setLawyers((prev) =>
@@ -159,48 +178,6 @@ export default function App() {
     };
     setSmsLogs((prev) => [newSMS, ...prev]);
     showToast('رد مدارک وکیل در سیستم ثبت و پیامک با ذکر دلیل به ایشان ارسال شد.');
-  };
-
-  // Toggle Feature Visibility (Soft Delete / Hide)
-  const handleToggleFeatureVisibility = (featureId: string) => {
-    setAppFeatures((prev) =>
-      prev.map((f) => (f.id === featureId ? { ...f, is_hidden: !f.is_hidden } : f))
-    );
-    showToast('وضعیت انتشار بخش در اپلیکیشن بروزرسانی شد.');
-  };
-
-  // Update Feature Title
-  const handleUpdateFeatureTitle = (featureId: string, newTitle: string) => {
-    setAppFeatures((prev) =>
-      prev.map((f) => (f.id === featureId ? { ...f, title: newTitle } : f))
-    );
-    showToast('عنوان خدمت بروزرسانی شد.');
-  };
-
-  // Grid Service Selection
-  const handleSelectService = (slug: string) => {
-    switch (slug) {
-      case 'case-tracking':
-        setIsCaseDetailsOpen(true);
-        break;
-      case 'lawyer-bank':
-        setIsLawyersDirectoryOpen(true);
-        break;
-      case 'legal-services':
-        setIsTriageOpen(true);
-        break;
-      case 'law-database':
-        setIsQnAOpen(true);
-        break;
-      case 'online-consultation':
-        setIsEncryptedConsultationOpen(true);
-        break;
-      case 'drafting':
-        setIsDocumentsVaultOpen(true);
-        break;
-      default:
-        setIsTriageOpen(true);
-    }
   };
 
   // Payment Handler
@@ -237,6 +214,79 @@ export default function App() {
     showToast(`مبلغ ${amount.toLocaleString('fa-IR')} تومان به کیف پول شما افزوده شد.`);
   };
 
+  // Document Upload Handler
+  const handleUploadDocument = (docData: Omit<CaseDocument, 'id' | 'uploadDate'>) => {
+    const newDoc: CaseDocument = {
+      ...docData,
+      id: `doc-${Date.now()}`,
+      uploadDate: new Date().toLocaleDateString('fa-IR'),
+    };
+    setDocuments((prev) => [newDoc, ...prev]);
+    showToast('سند با استاندارد رمزنگاری AES-256 بارگذاری و هش یکتای SHA-256 صادر گردید.');
+  };
+
+  // Add Calendar Event
+  const handleAddCalendarEvent = (eventData: Omit<CalendarEvent, 'id' | 'isCompleted'>) => {
+    const newEvent: CalendarEvent = {
+      ...eventData,
+      id: `evt-${Date.now()}`,
+      isCompleted: false,
+    };
+    setCalendarEvents((prev) => [newEvent, ...prev]);
+    showToast('رویداد قضایی در تقویم هوشمند دادگستر ثبت شد.');
+  };
+
+  // Toggle Calendar Event
+  const handleToggleCalendarEvent = (eventId: string) => {
+    setCalendarEvents((prev) =>
+      prev.map((e) => (e.id === eventId ? { ...e, isCompleted: !e.isCompleted } : e))
+    );
+  };
+
+  // Ask Q&A
+  const handleAskQuestion = (item: Omit<LegalQnAItem, 'id' | 'views' | 'answers'>) => {
+    const newQ: LegalQnAItem = {
+      ...item,
+      id: `q-${Date.now()}`,
+      views: 1,
+      answers: [],
+    };
+    setQnaList((prev) => [newQ, ...prev]);
+    showToast('پرسش حقوقی شما با موفقیت در بانک قوانین و آراء منتشر شد.');
+  };
+
+  // Add Answer to Q&A
+  const handleAddAnswer = (questionId: string, answerText: string, relevantArticles: string[]) => {
+    setQnaList((prev) =>
+      prev.map((q) => {
+        if (q.id === questionId) {
+          const newAns = {
+            id: `ans-${Date.now()}`,
+            lawyerId: currentUser.id,
+            lawyerName: currentUser.name,
+            lawyerAvatar: currentUser.avatar,
+            lawyerTitle: 'وکیل پایه یک دادگستری',
+            answer: answerText,
+            date: new Date().toLocaleDateString('fa-IR'),
+            upvotes: 0,
+            isVerifiedBest: false,
+            relevantArticles,
+          };
+          return { ...q, answers: [...q.answers, newAns] };
+        }
+        return q;
+      })
+    );
+    showToast('پاسخ حقوقی شما ثبت گردید.');
+  };
+
+  // Dynamic Menus by Location
+  const subMenuPills = getMenusByLocation('sub_menu');
+  const homeGridFeatures = getMenusByLocation('home_grid');
+  const drawerMenus = getMenusByLocation('side_drawer');
+  const secondaryTools = getMenusByLocation('secondary_tools');
+  const bottomNavItems = getMenusByLocation('bottom_nav');
+
   return (
     <div className="min-h-screen bg-[#070b14] flex justify-center selection:bg-[#F59E0B]/30 selection:text-[#F59E0B] font-sans antialiased">
       {/* Native Mobile Screen Shell */}
@@ -247,7 +297,7 @@ export default function App() {
 
         {/* 1. TOP APP BAR */}
         <header className="h-14 px-4 bg-[#0B1120]/90 backdrop-blur-md border-b border-slate-800/80 sticky top-11 z-30 flex items-center justify-between">
-          {/* Left Slot: Hamburger menu icon */}
+          {/* Left Slot: Hamburger menu icon & Admin CMS Quick Access */}
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setIsDrawerOpen(true)}
@@ -259,16 +309,18 @@ export default function App() {
             <button
               onClick={() => setIsAdminCMSOpen(true)}
               className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500/20 transition-colors cursor-pointer"
-              title="پنل مدیریت CMS"
+              title="پنل مدیریت CMS (Zero Hardcoded UI)"
             >
               <Sliders className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Center Slot: App Logo & Brand */}
+          {/* Center Slot: App Logo & Brand (Hydrated from Dynamic CMS Text) */}
           <div className="flex items-center gap-2">
             <LegalScalesLogo size="xs" variant="gold" />
-            <span className="text-sm font-black tracking-tight text-white">دادگستر</span>
+            <span className="text-sm font-black tracking-tight text-white">
+              {t('app_title', 'دادگستر')}
+            </span>
           </div>
 
           {/* Right Slot: Notification & Profile icons */}
@@ -291,7 +343,7 @@ export default function App() {
               title="پروفایل کاربری"
             >
               <img
-                src="/src/assets/images/client_profile_avatar_1793192628292.jpg"
+                src={currentUser.avatar || '/src/assets/images/client_profile_avatar_1793192628292.jpg'}
                 alt={currentUser.name}
                 referrerPolicy="no-referrer"
                 className="w-9 h-9 rounded-xl object-cover ring-2 ring-[#F59E0B]/60 ring-offset-1 ring-offset-[#0B1120] group-hover:scale-105 transition-transform"
@@ -305,24 +357,20 @@ export default function App() {
         {toastMessage && (
           <div className="mx-4 mt-2 p-2.5 rounded-xl bg-amber-500/15 border border-[#F59E0B]/40 text-amber-300 text-xs flex items-center justify-between shadow-lg animate-fade-in z-20">
             <span>{toastMessage}</span>
-            <button onClick={() => setToastMessage(null)} className="text-amber-400 font-bold px-1.5">×</button>
+            <button onClick={() => setToastMessage(null)} className="text-amber-400 font-bold px-1.5 cursor-pointer">×</button>
           </div>
         )}
 
-        {/* 1. SUB-MENUS: Horizontal Scrollable Row of Pills/Chips */}
+        {/* 1. SUB-MENUS: Horizontal Scrollable Row of Pills/Chips (Hydrated 100% from CMS) */}
         <div className="px-4 pt-2.5 pb-1 border-b border-slate-800/60 bg-[#0B1120]/60 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-1.5 min-w-max">
-            {[
-              { id: 'all', title: 'همه', action: () => setActiveSubMenuPill('همه') },
-              { id: 'services', title: 'خدمات حقوقی', action: () => { setActiveSubMenuPill('خدمات حقوقی'); setIsTriageOpen(true); } },
-              { id: 'lawyers', title: 'بانک وکلا', action: () => { setActiveSubMenuPill('بانک وکلا'); setIsLawyersDirectoryOpen(true); } },
-              { id: 'cases', title: 'پیگیری دادرسی', action: () => { setActiveSubMenuPill('پیگیری دادرسی'); setIsCaseDetailsOpen(true); } },
-              { id: 'laws', title: 'بانک قوانین', action: () => { setActiveSubMenuPill('بانک قوانین'); setIsQnAOpen(true); } },
-              { id: 'consult', title: 'مشاوره آنلاین', action: () => { setActiveSubMenuPill('مشاوره آنلاین'); setIsEncryptedConsultationOpen(true); } },
-            ].map((pill) => (
+            {subMenuPills.map((pill) => (
               <button
                 key={pill.id}
-                onClick={pill.action}
+                onClick={() => {
+                  setActiveSubMenuPill(pill.title);
+                  handleNavigate(pill.target_url);
+                }}
                 className={`px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   activeSubMenuPill === pill.title
                     ? 'bg-[#F59E0B] text-slate-950 shadow-md shadow-amber-500/20 font-bold'
@@ -349,10 +397,10 @@ export default function App() {
               onOpenSana={() => setIsAblaghiehOpen(true)}
             />
 
-            {/* 3. SERVICES GRID (3-Column Grid Layout) */}
+            {/* 3. SERVICES GRID (3-Column Grid Layout - Hydrated from CMS home_grid) */}
             <MobileServicesGrid
-              features={appFeatures}
-              onSelectService={handleSelectService}
+              items={homeGridFeatures}
+              onSelectService={handleNavigate}
             />
 
             {/* 2. HERO CARD: Current Active Case Card (Glassmorphism + Floating Gold Chip) */}
@@ -360,13 +408,15 @@ export default function App() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-teal-400 rounded-full" />
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-100">پرونده فعال جاری (سامانه ثنا)</h3>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-100">
+                    {t('hero_card_section_title', 'پرونده فعال جاری (سامانه ثنا)')}
+                  </h3>
                 </div>
                 <button
                   onClick={() => setIsCaseDetailsOpen(true)}
                   className="text-[11px] text-[#F59E0B] font-semibold flex items-center gap-0.5 hover:underline cursor-pointer"
                 >
-                  <span>جزییات کامل</span>
+                  <span>{t('hero_card_details_btn', 'جزییات کامل')}</span>
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -377,20 +427,22 @@ export default function App() {
               >
                 <div className="flex items-center justify-between">
                   <span className="bg-[#F59E0B] text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-sm font-mono tabular-nums">
-                    پرونده: ۱۴۰۳-۹۸۲۱
+                    {t('hero_case_number_badge', 'پرونده: ۱۴۰۳-۹۸۲۱')}
                   </span>
                   <span className="text-[11px] font-semibold text-teal-300 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-                    {currentCase?.status || 'در حال رسیدگی'}
+                    {t('hero_case_status', currentCase?.status || 'در حال رسیدگی')}
                   </span>
                 </div>
 
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1 flex-1">
                     <h4 className="text-xs font-bold text-slate-100 group-hover:text-amber-300 transition-colors leading-snug">
-                      {currentCase?.title}
+                      {t('hero_case_title', currentCase?.title || 'دعوای الزام به تنظیم سند رسمی ملک مسکونی')}
                     </h4>
-                    <p className="text-[11px] text-slate-400">{currentCase?.courtBranch}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {t('hero_case_court', currentCase?.courtBranch || 'شعبه ۱۰۵ دادگاه عمومی حقوقی مجتمع قضایی شهید بهشتی')}
+                    </p>
                   </div>
                   <div className="w-9 h-9 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20 flex items-center justify-center text-[#F59E0B] shrink-0">
                     <Gavel className="w-4 h-4" />
@@ -398,20 +450,26 @@ export default function App() {
                 </div>
 
                 <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>موعد جلسه بعدی دادرسی:</span>
-                  <span className="text-amber-300 font-semibold">دوشنبه ۱۴ آبان · ساعت ۱۰:۳۰</span>
+                  <span>{t('hero_case_next_date_label', 'موعد جلسه بعدی دادرسی:')}</span>
+                  <span className="text-amber-300 font-semibold">
+                    {t('hero_case_next_date_val', 'دوشنبه ۱۴ آبان · ساعت ۱۰:۳۰')}
+                  </span>
                 </div>
               </div>
             </section>
 
-            {/* 3. TIMELINE (Case Steps) - Minimal Thin Lines and Small Icons */}
+            {/* 3. TIMELINE (Case Steps) - Minimal Thin Lines and Small Icons (Hydrated from CMS) */}
             <section className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-[#F59E0B] rounded-full" />
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-100">مراحل دادرسی پرونده</h3>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-100">
+                    {t('timeline_title', 'مراحل دادرسی پرونده')}
+                  </h3>
                 </div>
-                <span className="text-[10px] text-amber-400/90 font-mono">شعبه ۱۰۵ حقوقی</span>
+                <span className="text-[10px] text-amber-400/90 font-mono">
+                  {t('timeline_branch_badge', 'شعبه ۱۰۵ حقوقی')}
+                </span>
               </div>
 
               <div className="relative pr-2 space-y-3">
@@ -422,10 +480,14 @@ export default function App() {
                   </div>
                   <div className="flex-1 -mt-0.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-200">ثبت دادخواست و پرداخت هزینه دادرسی</span>
+                      <span className="text-xs font-bold text-slate-200">
+                        {t('timeline_step1_title', 'ثبت دادخواست و پرداخت هزینه دادرسی')}
+                      </span>
                       <span className="text-[10px] text-slate-500">۱۵ مهر</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">دادخواست از طریق سامانه خدمات قضایی ثبت شد.</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {t('timeline_step1_desc', 'دادخواست از طریق سامانه خدمات قضایی ثبت شد.')}
+                    </p>
                   </div>
                 </div>
 
@@ -439,10 +501,14 @@ export default function App() {
                   </div>
                   <div className="flex-1 -mt-0.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-200">توزیع به شعبه ۱۰۵ حقوقی</span>
+                      <span className="text-xs font-bold text-slate-200">
+                        {t('timeline_step2_title', 'توزیع به شعبه ۱۰۵ حقوقی')}
+                      </span>
                       <span className="text-[10px] text-slate-500">۲۰ مهر</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">پرونده به ریاست شعبه ارجاع گردید.</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {t('timeline_step2_desc', 'پرونده به ریاست شعبه ارجاع گردید.')}
+                    </p>
                   </div>
                 </div>
 
@@ -456,10 +522,16 @@ export default function App() {
                   </div>
                   <div className="flex-1 -mt-0.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-amber-300">ارجاع به کارشناس رسمی دادگستری</span>
-                      <span className="text-[10px] bg-amber-500/10 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/20 font-bold">در حال اقدام</span>
+                      <span className="text-xs font-bold text-amber-300">
+                        {t('timeline_step3_title', 'ارجاع به کارشناس رسمی دادگستری')}
+                      </span>
+                      <span className="text-[10px] bg-amber-500/10 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/20 font-bold">
+                        در حال اقدام
+                      </span>
                     </div>
-                    <p className="text-[10px] text-slate-300 mt-0.5">کارشناس منتخب در حال تهیه نظریه کارشناسی ملکی است.</p>
+                    <p className="text-[10px] text-slate-300 mt-0.5">
+                      {t('timeline_step3_desc', 'کارشناس منتخب در حال تهیه نظریه کارشناسی ملکی است.')}
+                    </p>
                   </div>
                 </div>
 
@@ -473,10 +545,14 @@ export default function App() {
                   </div>
                   <div className="flex-1 -mt-0.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-400">رسیدگی در شعبه و صدور رای</span>
+                      <span className="text-xs font-bold text-slate-400">
+                        {t('timeline_step4_title', 'رسیدگی در شعبه و صدور رای')}
+                      </span>
                       <span className="text-[10px] text-slate-600">موعد: ۱۴ آبان</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">جلسه دادرسی در وقت مقرر برگزار خواهد شد.</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      {t('timeline_step4_desc', 'جلسه دادرسی در وقت مقرر برگزار خواهد شد.')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -490,7 +566,7 @@ export default function App() {
           <div className="flex-1 p-4 pb-44 overflow-y-auto no-scrollbar">
             <MobileFilesView
               cases={cases}
-              onSelectCase={(c) => setIsCaseDetailsOpen(true)}
+              onSelectCase={() => setIsCaseDetailsOpen(true)}
               onOpenNewCaseTriage={() => setIsTriageOpen(true)}
             />
           </div>
@@ -525,41 +601,28 @@ export default function App() {
         )}
 
         {/* 4. BOTTOM NAV & ACTIONS (Thumb Zone) */}
-        {/* Horizontal scrollable secondary tools row */}
+        {/* Horizontal scrollable secondary tools row (Hydrated from CMS secondary_tools) */}
         <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-30 px-3 pointer-events-none">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pointer-events-auto py-1">
-            <button
-              onClick={() => setIsDocumentsVaultOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 hover:text-white hover:border-slate-700 whitespace-nowrap flex items-center gap-1 shadow-lg backdrop-blur-md cursor-pointer"
-            >
-              <FileText className="w-3 h-3 text-teal-400" />
-              <span>اسناد و مدارک</span>
-            </button>
-            <button
-              onClick={() => setIsTriageOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 hover:text-white hover:border-slate-700 whitespace-nowrap flex items-center gap-1 shadow-lg backdrop-blur-md cursor-pointer"
-            >
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>تریاژ هوشمند</span>
-            </button>
-            <button
-              onClick={() => setIsEncryptedConsultationOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 hover:text-white hover:border-slate-700 whitespace-nowrap flex items-center gap-1 shadow-lg backdrop-blur-md cursor-pointer"
-            >
-              <Lock className="w-3 h-3 text-cyan-400" />
-              <span>مشاوره رمزنگاری</span>
-            </button>
-            <button
-              onClick={() => setIsQnAOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 hover:text-white hover:border-slate-700 whitespace-nowrap flex items-center gap-1 shadow-lg backdrop-blur-md cursor-pointer"
-            >
-              <BookOpen className="w-3 h-3 text-indigo-400" />
-              <span>بانک قوانین</span>
-            </button>
+            {secondaryTools.map((tool) => (
+              <button
+                key={tool.id}
+                onClick={() => handleNavigate(tool.target_url)}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 hover:text-white hover:border-slate-700 whitespace-nowrap flex items-center gap-1.5 shadow-lg backdrop-blur-md cursor-pointer"
+              >
+                <DynamicIcon
+                  name={tool.icon_name}
+                  style="linear"
+                  colorTheme={tool.color_theme}
+                  className="w-3.5 h-3.5"
+                />
+                <span>{tool.title}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Two prominent floating action buttons side-by-side just above bottom bar */}
+        {/* Two prominent floating action buttons side-by-side just above bottom bar (Hydrated from CMS texts) */}
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-30 px-3 pointer-events-none">
           <div className="grid grid-cols-2 gap-2 pointer-events-auto">
             {/* Solid Gold Button: 'مشاهده پرونده' */}
@@ -568,7 +631,7 @@ export default function App() {
               className="py-2.5 px-3 rounded-2xl bg-[#F59E0B] hover:bg-[#d97706] text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-xl shadow-amber-500/25 transition-all cursor-pointer active:scale-[0.98]"
             >
               <Briefcase className="w-4 h-4 stroke-[2.5]" />
-              <span>مشاهده پرونده</span>
+              <span>{t('action_view_case_btn', 'مشاهده پرونده')}</span>
             </button>
 
             {/* Dark Glass Button: 'ابلاغیه‌ها' */}
@@ -577,98 +640,72 @@ export default function App() {
               className="py-2.5 px-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 shadow-xl backdrop-blur-xl transition-all cursor-pointer active:scale-[0.98] relative"
             >
               <Bell className="w-4 h-4 text-amber-400" />
-              <span>ابلاغیه‌ها</span>
+              <span>{t('action_ablaghieh_btn', 'ابلاغیه‌ها')}</span>
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute top-2 right-3" />
               <span className="w-2 h-2 rounded-full bg-amber-400 absolute top-2 right-3" />
             </button>
           </div>
         </div>
 
-        {/* 4. BOTTOM NAVIGATION BAR (Home, Cases, Wallet, Profile) */}
+        {/* 4. BOTTOM NAVIGATION BAR (Hydrated 100% from CMS bottom_nav items) */}
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 px-3 pb-3 pt-1 pointer-events-none">
-          <nav className="h-16 bg-[#0F172A]/95 backdrop-blur-2xl border border-slate-800/80 rounded-2xl grid grid-cols-4 items-center px-1 shadow-2xl pointer-events-auto">
-            {/* 1. خانه (Home) */}
-            <button
-              onClick={() => setActiveNavTab('home')}
-              className={`flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
-                activeNavTab === 'home' ? 'text-[#F59E0B]' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Home className="w-5 h-5" />
-              <span className="text-[10px] mt-1 font-medium">خانه</span>
-            </button>
+          <nav className="h-16 bg-[#0F172A]/95 backdrop-blur-2xl border border-slate-800/80 rounded-2xl flex items-center justify-around px-1 shadow-2xl pointer-events-auto">
+            {bottomNavItems.map((item) => {
+              const tabId = item.slug as 'home' | 'cases' | 'wallet' | 'profile';
+              const isActive = activeNavTab === tabId;
 
-            {/* 2. پرونده‌ها (Cases) */}
-            <button
-              onClick={() => setActiveNavTab('cases')}
-              className={`flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
-                activeNavTab === 'cases' ? 'text-teal-400' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Briefcase className="w-5 h-5" />
-              <span className="text-[10px] mt-1 font-medium">پرونده‌ها</span>
-            </button>
-
-            {/* 3. کیف پول (Wallet) */}
-            <button
-              onClick={() => setActiveNavTab('wallet')}
-              className={`flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
-                activeNavTab === 'wallet' ? 'text-[#F59E0B]' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Landmark className="w-5 h-5" />
-              <span className="text-[10px] mt-1 font-medium">کیف پول</span>
-            </button>
-
-            {/* 4. پروفایل (Profile) */}
-            <button
-              onClick={() => setActiveNavTab('profile')}
-              className={`flex flex-col items-center justify-center py-1 transition-colors cursor-pointer ${
-                activeNavTab === 'profile' ? 'text-cyan-400' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <User className="w-5 h-5" />
-              <span className="text-[10px] mt-1 font-medium">پروفایل</span>
-            </button>
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (['home', 'cases', 'wallet', 'profile'].includes(item.slug)) {
+                      setActiveNavTab(tabId);
+                    } else {
+                      handleNavigate(item.target_url);
+                    }
+                  }}
+                  className={`flex flex-col items-center justify-center py-1 px-3 transition-colors cursor-pointer flex-1 ${
+                    isActive ? 'text-[#F59E0B]' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <DynamicIcon
+                    name={item.icon_name}
+                    style="minimal"
+                    colorTheme={isActive ? 'amber' : undefined}
+                    className={`w-5 h-5 ${isActive ? 'text-[#F59E0B]' : 'text-slate-400'}`}
+                  />
+                  <span className={`text-[10px] mt-1 font-medium ${isActive ? 'text-[#F59E0B] font-bold' : ''}`}>
+                    {item.title}
+                  </span>
+                </button>
+              );
+            })}
           </nav>
         </div>
 
       </div>
 
-      {/* Side Drawer Menu (Slides from right) */}
+      {/* Side Drawer Menu (Slides from right, hydrated 100% dynamically) */}
       <MobileSideDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         user={currentUser}
-        onOpenTransactions={() => setActiveNavTab('wallet')}
-        onOpenInbox={() => setIsAblaghiehOpen(true)}
-        onOpenSettings={() => setIsAdminCMSOpen(true)}
-        onOpenAbout={() => setIsArchitectureOpen(true)}
+        menuItems={drawerMenus}
+        onNavigate={handleNavigate}
         onOpenAuth={() => setIsAuthOpen(true)}
         unreadCount={2}
+        t={t}
       />
 
-      {/* Admin Panel (CMS) Modal */}
-      <AdminCMSModal
-        isOpen={isAdminCMSOpen}
-        onClose={() => setIsAdminCMSOpen(false)}
-        lawyers={lawyers}
-        onApproveLawyer={handleApproveLawyer}
-        onRejectLawyer={handleRejectLawyer}
-        appFeatures={appFeatures}
-        onToggleFeatureVisibility={handleToggleFeatureVisibility}
-        onUpdateFeatureTitle={handleUpdateFeatureTitle}
-      />
-
-      {/* Full Case Details Bottom Sheet */}
+      {/* Case Details Sheet */}
       <MobileCaseDetailsSheet
         isOpen={isCaseDetailsOpen}
         onClose={() => setIsCaseDetailsOpen(false)}
         legalCase={currentCase}
         lawyer={assignedLawyer}
-        onQuickCallLawyer={(id) => {
+        onQuickCallLawyer={() => {
           setIsCaseDetailsOpen(false);
-          setIsLawyersDirectoryOpen(true);
+          setIsEncryptedConsultationOpen(true);
         }}
         onViewDocuments={() => {
           setIsCaseDetailsOpen(false);
@@ -676,69 +713,95 @@ export default function App() {
         }}
       />
 
-      {/* Ablaghieh / Notifications Bottom Sheet */}
+      {/* Ablaghieh Sheet */}
       <MobileAblaghiehSheet
         isOpen={isAblaghiehOpen}
         onClose={() => setIsAblaghiehOpen(false)}
       />
 
-      {/* Auth Modal with Valid Links */}
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onRegisterLawyer={(newLawyer) => {
-          setLawyers((prev) => [newLawyer, ...prev]);
-        }}
-        onLoginSuccess={(userId) => {
-          const found = allUsers.find((u) => u.id === userId);
-          if (found) setCurrentUser(found);
-        }}
+      {/* Master Admin CMS Modal (Zero Hardcoded UI & Lawyer Verification) */}
+      <AdminCMSModal
+        isOpen={isAdminCMSOpen}
+        onClose={() => setIsAdminCMSOpen(false)}
+        lawyers={lawyers}
+        onApproveLawyer={handleApproveLawyer}
+        onRejectLawyer={handleRejectLawyer}
+        onOpenArchitecture={() => setIsArchitectureOpen(true)}
       />
+
+      {/* Encrypted Consultation Session Modal */}
+      {isEncryptedConsultationOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-2xl bg-[#0B1120] border border-slate-800 rounded-3xl overflow-hidden max-h-[92vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-3.5 border-b border-slate-800 bg-slate-950">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-white">مشاوره رمزنگاری‌شده امن (AES-256)</h3>
+                  <p className="text-[10px] text-slate-400">چت متنی امن، تبادل مدارک و تماس ویدیویی رمزنگاری‌شده</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEncryptedConsultationOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <EncryptedChatAndVideo
+                currentUser={currentUser}
+                lawyers={lawyers}
+                initialLawyerId={assignedLawyer?.id}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* AI Triage Modal */}
       <AITriageModal
         isOpen={isTriageOpen}
         onClose={() => setIsTriageOpen(false)}
         lawyers={lawyers}
-        onSelectLawyerForBooking={(lawyerId) => {
+        onSelectLawyerForBooking={(lawyerId: string) => {
           setIsTriageOpen(false);
-          const target = lawyers.find((l) => l.id === lawyerId) || null;
-          setSelectedLawyerForBooking(target);
+          const found = lawyers.find((l) => l.id === lawyerId) || lawyers[0];
+          setSelectedLawyerForBooking(found);
         }}
       />
 
-      {/* Lawyers Directory Modal */}
+      {/* Lawyer Directory Modal */}
       {isLawyersDirectoryOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg max-h-[90vh] bg-[#0B1120] border border-slate-800 rounded-3xl overflow-y-auto p-4 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-slate-100">بانک وکلای متخصص دادگستر</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-3xl bg-[#0B1120] border border-slate-800 rounded-3xl overflow-hidden max-h-[92vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-3.5 border-b border-slate-800 bg-slate-950">
+              <span className="text-xs font-bold text-white">بانک جامع وکلای پایه یک دادگستری</span>
               <button
                 onClick={() => setIsLawyersDirectoryOpen(false)}
-                className="text-xs text-slate-400 hover:text-slate-200"
+                className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
               >
-                بستن
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <LawyerDirectory
-              lawyers={lawyers}
-              onSelectLawyerForProfile={(lawyer) => {
-                setSelectedLawyerForProfile(lawyer);
-              }}
-              onSelectLawyerForBooking={(lawyerId) => {
-                const target = lawyers.find((l) => l.id === lawyerId) || null;
-                setSelectedLawyerForBooking(target);
-              }}
-              onStartChatWithLawyer={(lawyerId) => {
-                setIsLawyersDirectoryOpen(false);
-                setIsEncryptedConsultationOpen(true);
-              }}
-              onQuickCall={(lawyerId) => {
-                setIsLawyersDirectoryOpen(false);
-                const target = lawyers.find((l) => l.id === lawyerId) || null;
-                setSelectedLawyerForBooking(target);
-              }}
-            />
+            <div className="flex-1 overflow-y-auto p-3">
+              <LawyerDirectory
+                lawyers={lawyers}
+                onSelectLawyerForProfile={(lawyer) => {
+                  setSelectedLawyerForProfile(lawyer);
+                }}
+                onSelectLawyerForBooking={(lawyerId: string) => {
+                  const found = lawyers.find((l) => l.id === lawyerId) || lawyers[0];
+                  setSelectedLawyerForBooking(found);
+                }}
+                onStartChatWithLawyer={(lawyerId: string) => {
+                  setIsLawyersDirectoryOpen(false);
+                  setIsEncryptedConsultationOpen(true);
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -747,163 +810,142 @@ export default function App() {
       <LawyerProfileModal
         lawyer={selectedLawyerForProfile}
         onClose={() => setSelectedLawyerForProfile(null)}
-        onBookConsultation={(lawyerId) => {
+        onBookConsultation={(lawyerId: string) => {
           setSelectedLawyerForProfile(null);
-          const target = lawyers.find((l) => l.id === lawyerId) || null;
-          setSelectedLawyerForBooking(target);
+          const found = lawyers.find((l) => l.id === lawyerId) || lawyers[0];
+          setSelectedLawyerForBooking(found);
         }}
         onStartChat={() => {
           setSelectedLawyerForProfile(null);
           setIsEncryptedConsultationOpen(true);
         }}
+        currentUserRole={currentUser.role}
         onAddReview={(lawyerId, review) => {
           setLawyers((prev) =>
-            prev.map((l) => (l.id === lawyerId ? { ...l, reviewCount: l.reviewCount + 1 } : l))
+            prev.map((l) =>
+              l.id === lawyerId
+                ? {
+                    ...l,
+                    reviews: [
+                      { ...review, id: `rev-${Date.now()}` },
+                      ...(l.reviews || []),
+                    ],
+                  }
+                : l
+            )
           );
+          showToast('نظر شما برای وکیل با موفقیت ثبت شد.');
         }}
-        currentUserRole={currentUser.role}
       />
 
-      {/* Booking & Payment Modal */}
+      {/* Booking and Payment Modal */}
       <BookingAndPaymentModal
-        isOpen={Boolean(selectedLawyerForBooking)}
+        isOpen={!!selectedLawyerForBooking}
         onClose={() => setSelectedLawyerForBooking(null)}
         lawyer={selectedLawyerForBooking}
-        initialServiceType="مشاوره تلفنی ۳۰ دقیقه"
-        onPaymentSuccess={handlePaymentSuccess}
         clientName={currentUser.name}
         clientPhone={currentUser.phone}
+        onPaymentSuccess={handlePaymentSuccess}
       />
 
       {/* Document Vault Modal */}
       {isDocumentsVaultOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg max-h-[90vh] bg-[#0B1120] border border-slate-800 rounded-3xl overflow-y-auto p-4 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-slate-100">اسناد، مدارک و تنظیم دادخواست</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-2xl bg-[#0B1120] border border-slate-800 rounded-3xl overflow-hidden max-h-[92vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-3.5 border-b border-slate-800 bg-slate-950">
+              <span className="text-xs font-bold text-white">صندوق اسناد و مدارک قضایی رمزنگاری‌شده</span>
               <button
                 onClick={() => setIsDocumentsVaultOpen(false)}
-                className="text-xs text-slate-400 hover:text-slate-200"
+                className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
               >
-                بستن
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <DocumentVaultView
-              documents={documents}
-              cases={cases}
-              onUploadDocument={(doc) => {
-                const newDoc: CaseDocument = {
-                  id: `doc-${Date.now()}`,
-                  uploadDate: new Date().toLocaleDateString('fa-IR'),
-                  ...doc,
-                };
-                setDocuments((prev) => [newDoc, ...prev]);
-              }}
-              currentUserRole={currentUser.role}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Legal Q&A Modal */}
-      {isQnAOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg max-h-[90vh] bg-[#0B1120] border border-slate-800 rounded-3xl overflow-y-auto p-4 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-slate-100">بانک قوانین و پرسش و پاسخ قضایی</h3>
-              <button
-                onClick={() => setIsQnAOpen(false)}
-                className="text-xs text-slate-400 hover:text-slate-200"
-              >
-                بستن
-              </button>
-            </div>
-            <LegalQnAView
-              qnaList={qnaList}
-              onAskQuestion={(item) => {
-                const newItem: LegalQnAItem = {
-                  id: `qna-${Date.now()}`,
-                  views: 1,
-                  answers: [],
-                  ...item,
-                };
-                setQnaList((prev) => [newItem, ...prev]);
-              }}
-              onAddAnswer={(qId, text, articles) => {
-                setQnaList((prev) =>
-                  prev.map((q) =>
-                    q.id === qId
-                      ? {
-                          ...q,
-                          answers: [
-                            ...q.answers,
-                            {
-                              id: `ans-${Date.now()}`,
-                              lawyerId: currentUser.id,
-                              lawyerName: currentUser.name,
-                              lawyerAvatar: currentUser.avatar,
-                              lawyerTitle: 'وکیل دادگستری',
-                              answer: text,
-                              date: new Date().toLocaleDateString('fa-IR'),
-                              upvotes: 0,
-                              isVerifiedBest: true,
-                              relevantArticles: articles,
-                            },
-                          ],
-                        }
-                      : q
-                  )
-                );
-              }}
-              currentUserRole={currentUser.role}
-              currentUserName={currentUser.name}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Architecture & Django Backend Modal */}
-      <ArchitectureModal
-        isOpen={isArchitectureOpen}
-        onClose={() => setIsArchitectureOpen(false)}
-      />
-
-      {/* Encrypted Consultation & Secure Chat Modal (PART 2 Integration) */}
-      {isEncryptedConsultationOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-fade-in text-right">
-          <div className="relative w-full max-w-lg bg-[#0B1120] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-4 max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 bg-slate-950/90 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
-                    <span>جلسه مشاوره امن و چت رمزنگاری‌شده (AES-256)</span>
-                  </h3>
-                  <p className="text-[10px] text-slate-400">
-                    رمزنگاری در حالت سکون (At Rest) بر اساس مدل‌های جنگو
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsEncryptedConsultationOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <EncryptedChatAndVideo
-                currentUser={currentUser}
-                lawyers={lawyers}
-                initialLawyerId={assignedLawyer.id}
-                autoStartCall={false}
+            <div className="flex-1 overflow-y-auto p-4">
+              <DocumentVaultView
+                documents={documents}
+                cases={cases}
+                currentUserRole={currentUser.role}
+                onUploadDocument={handleUploadDocument}
               />
             </div>
           </div>
         </div>
       )}
+
+      {/* Smart Calendar Modal */}
+      {isCalendarOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-2xl bg-[#0B1120] border border-slate-800 rounded-3xl overflow-hidden max-h-[92vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-3.5 border-b border-slate-800 bg-slate-950">
+              <span className="text-xs font-bold text-white">تقویم اوقات قضایی و یادآوری جلسات دادگاه</span>
+              <button
+                onClick={() => setIsCalendarOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <SmartCalendarView
+                events={calendarEvents}
+                cases={cases}
+                currentUserRole={currentUser.role}
+                onAddEvent={handleAddCalendarEvent}
+                onToggleComplete={handleToggleCalendarEvent}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legal Q&A / Law Database */}
+      {isQnAOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-2xl bg-[#0B1120] border border-slate-800 rounded-3xl overflow-hidden max-h-[92vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-3.5 border-b border-slate-800 bg-slate-950">
+              <span className="text-xs font-bold text-white">بانک قوانین و پرسش و پاسخ تخصصی</span>
+              <button
+                onClick={() => setIsQnAOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <LegalQnAView
+                qnaList={qnaList}
+                currentUserRole={currentUser.role}
+                currentUserName={currentUser.name}
+                onAskQuestion={handleAskQuestion}
+                onAddAnswer={handleAddAnswer}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Architecture & Backend Models Modal */}
+      <ArchitectureModal
+        isOpen={isArchitectureOpen}
+        onClose={() => setIsArchitectureOpen(false)}
+      />
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onRegisterLawyer={(newLawyer: Lawyer) => {
+          setLawyers((prev) => [newLawyer, ...prev]);
+          showToast('ثبت‌نام وکیل با موفقیت ثبت شد و مدارک پروانه در صف بررسی ادمین قرار گرفت.');
+        }}
+        onLoginSuccess={(userId: string) => {
+          const found = allUsers.find((u) => u.id === userId) || allUsers[0];
+          setCurrentUser(found);
+          showToast(`ورود موفقیت‌آمیز به عنوان ${found.name}`);
+        }}
+      />
+
     </div>
   );
 }
